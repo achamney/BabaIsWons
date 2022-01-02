@@ -1,0 +1,123 @@
+.block {
+  position: absolute;
+  background-size: cover; /*contain*/
+  background-repeat: no-repeat;
+  transition-property: top, left;
+  transition-duration: 0.1s;
+  transition-delay:0;
+}
+body {
+  padding: 50px;
+  padding-top: 5px;
+  position: relative;
+  height:80%;
+}
+#gamebody {
+  height:100%;
+  background-color: black;
+}
+.word {
+  font-size: 20px;
+  color:white;
+  text-align: center;
+}
+.word.action {
+  border-radius: 4px;
+  background-color: brown;
+}
+.baba{
+}
+.baba.r { background-image: url("img/babar.png") }
+.baba.l { background-image: url("img/babal.png") }
+.baba.u { background-image: url("img/babau.png") }
+.baba.d { background-image: url("img/babad.png") }
+.keke.r { background-image: url("img/keker.png") }
+.keke.l { background-image: url("img/kekel.png") }
+.keke.u { background-image: url("img/kekeu.png") }
+.keke.d { background-image: url("img/keked.png") }
+.wall {
+  background-image: url("img/wall.png")
+}
+.rock {
+  background-image: url("img/rock.png")
+}
+.flag {
+  background-image: url("img/flag.png")
+}
+.water {
+  background-image: url("img/water.png")
+}
+.skull {
+  background-image: url("img/skulld.png")
+}
+.lava {
+  background-image: url("img/lava.png")
+}
+.grass {
+  background-image: url("img/grass.png")
+}
+.word.babaword {
+  color: pink;
+}
+.word.wallword {
+  color: #445;
+}
+.word.flagword {
+  color: yellow;
+}
+.word.rockword {
+  color: brown;
+}
+.word.kekeword {
+  color: #993;
+}
+.word.waterword {
+  font-size: 13px;
+  color: #66F;
+}
+.word.defeatword {
+  font-size: 12px;
+  background-color:#600;
+}
+.word.skullword {
+  font-size: 16px;
+  color:#900;
+}
+.word.lavaword {
+  color:#F70;
+}
+.word.grassword {
+  color:#4F8;
+  font-size: 16px;
+}
+/* Add Animation */
+@keyframes animatetop {
+    from {
+        top: -300px;
+        opacity: 0
+    }
+
+    to {
+        top: 100px;
+        opacity: 1
+    }
+}
+
+/* The Close Button */
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+    .close:hover,
+    .close:focus {
+        color: black;
+        text-decoration: none;
+        cursor: pointer;
+    }
+#modaltext{
+    padding: 20px;
+    font-size: 20px;
+}
