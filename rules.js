@@ -1,11 +1,20 @@
-var wordMasks ={"a": ["you", "stop", "push", "win", "open", "shut", "move", "sink", "defeat", "hot", "melt", "swap", "pull"],
+var wordMasks ={"a": ["you", "stop", "push", "win", "open", "shut", "move", "sink",
+                      "defeat", "hot", "melt", "swap", "pull"],
                 "v": ["is"],
                 "h": ["has"],
-                "n": ["baba", "rock", "wall", "flag", "keke", "water", "skull", "lava", "grass"]
+                "c": ["and"],
+                "n": ["baba", "rock", "wall", "flag", "keke", "water", "skull",
+                      "lava", "grass", "jelly", "crab", "star", "love", "door", "key"]
               };
-var validSequences = {"nva" : executeAdjective, "nvn": executeEquality, "nhn": executeHas};
+var validSequences = {"nva" : executeAdjective, "nvn": executeEquality, "nhn": executeHas,
+  "nvaca":executeConjAdj, "nvacaca":executeConjAdj, "nvacacaca":executeConjAdj,
+  "ncnva":executeMultiAdj,"ncncnva":executeMultiAdj,"ncncncnva":executeMultiAdj };
+var runningEqualities = [],
+    runningChangeless = [];
 function executeRules () {
   removeAllAdjectives(gamestate);
+  runningEqualities = [];
+  runningChangeless = [];
   for (var word of gamestate.words) {
     word.push = true;
   }
@@ -57,6 +66,26 @@ function executeRules () {
       }
     }
   }
+  for (var actors of runningEqualities) {
+    if (~runningChangeless.indexOf(actors[0].name)) {
+      continue;
+    }
+    for (var obj of gamestate.objects) {
+      if (actors[0].name == obj.name) {
+        changeObj(obj, actors[2].name);
+      }
+    }
+  }
+}
+function checkIsLockAndKey(obj1, objs2) {
+  for (var obj2 of objs2) {
+    if ((obj1.open && obj2.shut) ||
+        (obj1.shut && obj2.open)) {
+      removeObj(obj1);
+      removeObj(obj2);
+      return true;
+    }
+  }
 }
 function executeRuleDir(searchChar, matchingWord, ruleName, dir) {
   var actors = [matchingWord];
@@ -103,10 +132,10 @@ function executeHas(actors) {
   }
 }
 function executeEquality(actors) {
-  for (var obj of gamestate.objects) {
-    if (obj.name == actors[0].name) {
-      changeObj(obj, actors[2].name);
-    }
+  if(actors[0].name == actors[2].name) {
+    runningChangeless.push(actors[0].name);
+  } else {
+    runningEqualities.push(actors);
   }
 }
 function removeAllAdjectives(gs) {
@@ -123,4 +152,18 @@ function removeAdjectives(obj) {
     delete obj[adjective];
   }
   delete obj.has;
+}
+function executeConjAdj(actors){
+  var adjs = actors.filter(a=>~wordMasks.a.indexOf(a.name));
+  for (var adj of adjs) {
+    var param = [actors[0],actors[1], adj];
+    executeAdjective(param);
+  }
+}
+function executeMultiAdj(actors){
+  var nouns = actors.filter(a=>~wordMasks.n.indexOf(a.name));
+  for (var noun of nouns) {
+    var param = [noun,{name:"is"}, actors[actors.length-1]];
+    executeAdjective(param);
+  }
 }

@@ -14,6 +14,12 @@ $(document).ready(function(){
       drawGameState();
     }
   });
+  $('#objdir').keydown(function (event) {
+    if(event.keyCode == 13) {
+      selectedObj.dir = this.value;
+      drawGameState();
+    }
+  });
   window.setInterval(function(){
     var levelcode = get("levelcode");
     var scrubbedGameState = scrubGameState(gamestate)
@@ -21,12 +27,14 @@ $(document).ready(function(){
   }, 10000)
 });
 
-function moveAllUp() {
+function moveAllDir(dir) {
   for(var obj of gamestate.objects) {
-    obj.y --;
+    obj.y += dir.y;
+    obj.x += dir.x;
   }
   for(var obj of gamestate.words) {
-    obj.y --;
+    obj.y += dir.y;
+    obj.x += dir.x;
   }
   drawGameState();
 }
@@ -42,6 +50,7 @@ function makeOrModObject(event) {
     if (objs.length == 0) {
       window.selectedObj = {name: window.selectedObj.name || defaultObj,x: gridpos.x, y: gridpos.y};
       $('#objname').val(window.selectedObj.name);
+      $('#objdir').val(window.selectedObj.dir);
       if (makemode == "object") {
         gamestate.objects.push(window.selectedObj);
       } else if (makemode == "word") {
@@ -50,6 +59,7 @@ function makeOrModObject(event) {
     } else if(objs.length == 1) {
       var selectedObj = objs[0];
       $('#objname').val(selectedObj.name);
+      $('#objdir').val(selectedObj.dir);
       window.selectedObj = selectedObj;
     }
   } else if (event.button == 2) {

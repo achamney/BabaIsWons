@@ -18,7 +18,7 @@ window.onload = function () {
     makeGameState(levelnum || 1);
     drawGameState();
   };
-  levelTag.src=`level${levelnum}.js`;
+  levelTag.src=`levels/level${levelnum}.js`;
   $("head")[0].appendChild(levelTag);
   $("#nextlevellink").attr("href",window.location.pathname +"?level="+(levelnum+1));
 
@@ -113,8 +113,8 @@ function removeObj(obj) {
   }
 }
 function makeGameState(level) {
-    if (window["level"+level]) {
-      gamestate = window["level"+level];
+    if (window.leveldata) {
+      gamestate = window.leveldata;
     } else {
       gamestate.levelId=level;
     }
@@ -179,8 +179,14 @@ function moveYou(dir) {
 function move(gameobj,dir) {
 
   var newPositionObjs = findAtPosition(gameobj.x + dir.x, gameobj.y + dir.y);
+  if (checkIsLockAndKey(gameobj, newPositionObjs)) {
+    return true;
+  }
   if(gameobj.swap) {
     if (isOutside(gameobj.x+dir.x, gameobj.y+dir.y)) {
+      if (gameobj.move) {
+        reverseDir(gameobj);
+      }
       return false;
     }
     for (var newPosObj of newPositionObjs) {
@@ -190,13 +196,16 @@ function move(gameobj,dir) {
     }
   }
   else if(findIsStop(gameobj.x, gameobj.y, dir)) {
+    if (gameobj.move) {
+      reverseDir(gameobj);
+    }
     return false;
   }
 
   newPositionObjs = findAtPosition(gameobj.x + dir.x, gameobj.y + dir.y);
   var cantMove = false;
   for(var pushObj of newPositionObjs) {
-    if (isStop(pushObj)){
+    if (isStop(pushObj) && !pushObj.you){
       return false;
     }
     if (canPush(pushObj)) {
@@ -214,6 +223,12 @@ function move(gameobj,dir) {
       move(beh, dir);
     }
   }
+}
+function reverseDir(obj) {
+  if (obj.dir == "r") obj.dir = "l";
+  else if (obj.dir == "l") obj.dir = "r";
+  else if (obj.dir == "u") obj.dir = "d";
+  else if (obj.dir == "d") obj.dir = "u";
 }
 function updateObjPosition(obj, dir) {
   var main = $("#gamebody"),
@@ -234,13 +249,13 @@ function findIsStop(x, y, dir) {
   var nextObjs = findAtPosition(x + dir.x, y + dir.y);
   if(nextObjs.length == 0) return false;
   for (var obj of nextObjs) {
-    if (obj.stop) return true;
+    if (obj.stop && !obj.you && !obj.shut) return true; // TODO: shut?
     if (obj.push) return findIsStop(x + dir.x, y + dir.y, dir);
   }
   return false;
 }
 function isOutside(x,y) {
-  if(x<=0 || y<=0 ||x > gamestate.size.x || y > gamestate.size.y){
+  if(x<=1 || y<=1 ||x > gamestate.size.x || y > gamestate.size.y){
     return true;
   }
   return false;

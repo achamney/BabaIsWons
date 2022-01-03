@@ -56,6 +56,24 @@ body {
 .grass {
   background-image: url("img/grass.png")
 }
+.jelly {
+  background-image: url("img/jelly.png")
+}
+.crab {
+  background-image: url("img/crab.png")
+}
+.star {
+  background-image: url("img/star.png")
+}
+.love {
+  background-image: url("img/love.png")
+}
+.door {
+  background-image: url("img/door.png")
+}
+.key {
+  background-image: url("img/key.png")
+}
 .word.babaword {
   color: pink;
 }
@@ -89,6 +107,25 @@ body {
 .word.grassword {
   color:#4F8;
   font-size: 16px;
+}
+.word.jellyword {
+  color:#46D;
+  font-size: 16px;
+}
+.word.crabword {
+  color:#F66;
+}
+.word.starword {
+  color:#DD6;
+}
+.word.loveword {
+  color:#FDD;
+}
+.word.doorword {
+  color:#830;
+}
+.word.keyword {
+  color:#FF9;
 }
 /* Add Animation */
 @keyframes animatetop {
