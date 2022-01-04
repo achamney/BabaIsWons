@@ -15,15 +15,35 @@ body {
 #gamebody {
   height:100%;
   background-color: black;
+  position: relative;
 }
 .word {
-  font-size: 20px;
-  color:white;
+  font-size: 2.2vh;
+  color: #999;
   text-align: center;
+  font-family: system-ui;
+  text-transform: uppercase;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  word-break: break-all;
+  line-height: 0.8;
+}
+.word.active{
+  color: white;
 }
 .word.action {
   border-radius: 4px;
+  background-color: rgb(82, 53, 39);
+}
+.word.action.active{
   background-color: brown;
+}
+.particle {
+  position: absolute;
+  font-size:2.5vh;
+  font-weight:700;
+  font-family: sans-serif;
 }
 .baba{
 }
@@ -76,9 +96,10 @@ body {
 }
 .word.babaword {
   color: pink;
+  font-size:3.2vh;
 }
 .word.wallword {
-  color: #445;
+  color: #667;
 }
 .word.flagword {
   color: yellow;
@@ -90,15 +111,12 @@ body {
   color: #993;
 }
 .word.waterword {
-  font-size: 13px;
   color: #66F;
 }
 .word.defeatword {
-  font-size: 12px;
   background-color:#600;
 }
 .word.skullword {
-  font-size: 16px;
   color:#900;
 }
 .word.lavaword {
@@ -106,11 +124,10 @@ body {
 }
 .word.grassword {
   color:#4F8;
-  font-size: 16px;
+  font-size:2.4vh;
 }
 .word.jellyword {
   color:#46D;
-  font-size: 16px;
 }
 .word.crabword {
   color:#F66;
@@ -123,6 +140,7 @@ body {
 }
 .word.doorword {
   color:#830;
+  font-size:2.8vh;
 }
 .word.keyword {
   color:#FF9;

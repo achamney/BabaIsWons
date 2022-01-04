@@ -3,7 +3,7 @@
     <link type="text/css" href="style.css" rel="stylesheet" />
     <title>Baba Is Wons</title>
 </head>
-<body>
+<body oncontextmenu="return false;">
   <h3><a href="" id="nextlevellink">Next Level</a></h3>
   <div id="gamebody">
 
@@ -16,11 +16,13 @@
   <textarea id = "levelcode" rows = 3 cols = 40>
   </textarea>
   <button id="objbutton">Object</button><button id="wordbutton">Word</button>
+  &nbsp; &nbsp; <button id="save">Save</button>
 </body>
 
 <script src="jquery-3.4.1.min.js"></script>
 <script src="markgen.js"></script>
 <script src="levelmaker.js"></script>
+<script src="particle.js"></script>
 <script src="rules.js"></script>
 <script src="game.js"></script>
 </html>

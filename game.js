@@ -40,6 +40,13 @@ window.onload = function () {
         undo();
       }
   });
+  window.setInterval(function () {
+    for (var obj of gamestate.objects) {
+      if (obj.win) {
+        particle(obj, "yellow", 2, 0.07);
+      }
+    }
+  }, 700);
 }
 function undo() {
   if(undoStack.length == 0) return;
@@ -111,13 +118,13 @@ function removeObj(obj) {
     }
     $("#"+obj.id).remove();
   }
+  particle(obj, "#733", 10, 0.1);
 }
 function makeGameState(level) {
     if (window.leveldata) {
       gamestate = window.leveldata;
-    } else {
-      gamestate.levelId=level;
-    }
+    } 
+    gamestate.levelId=level;
 }
 function findAtPosition(i, j, excludeObjects) {
   var ret = [];
@@ -171,6 +178,7 @@ function moveYou(dir) {
   undoStack.push(JSON.stringify(gamestate));
   for(var obj of gamestate.objects) {
     if (obj.you) {
+      particle(obj, "white", 1, 0.01);
       move(obj, dir);
     }
   }
@@ -255,7 +263,7 @@ function findIsStop(x, y, dir) {
   return false;
 }
 function isOutside(x,y) {
-  if(x<=1 || y<=1 ||x > gamestate.size.x || y > gamestate.size.y){
+  if(x<0 || y<0 ||x >= gamestate.size.x || y >= gamestate.size.y){
     return true;
   }
   return false;

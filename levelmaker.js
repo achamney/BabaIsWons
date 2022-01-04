@@ -4,6 +4,7 @@ window.makemode = "object";
 $(document).ready(function(){
   $("#objbutton").click(function (){window.makemode = "object";});
   $("#wordbutton").click(function (){window.makemode = "word";});
+  $("#save").click(function (){save();});
 
   $("#gamebody").mousedown(function (event) {
     makeOrModObject(event);
@@ -40,14 +41,13 @@ function moveAllDir(dir) {
 }
 function scrubGameState(gamestate) {
   var scrubbed = JSON.parse(JSON.stringify(gamestate));
-  removeAllAdjectives(scrubbed);
+  removeAllAdjectives(scrubbed, true);
   return scrubbed;
 }
 function makeOrModObject(event) {
   var gridpos = pointToGrid(event);
-  var objs = findAtPosition(gridpos.x, gridpos.y);
   if (event.button == 0) {
-    if (objs.length == 0) {
+    if (!event.target.gamedata) {
       window.selectedObj = {name: window.selectedObj.name || defaultObj,x: gridpos.x, y: gridpos.y};
       $('#objname').val(window.selectedObj.name);
       $('#objdir').val(window.selectedObj.dir);
@@ -56,16 +56,14 @@ function makeOrModObject(event) {
       } else if (makemode == "word") {
         gamestate.words.push(window.selectedObj);
       }
-    } else if(objs.length == 1) {
-      var selectedObj = objs[0];
+    } else {
+      var selectedObj = event.target.gamedata;
       $('#objname').val(selectedObj.name);
       $('#objdir').val(selectedObj.dir);
       window.selectedObj = selectedObj;
     }
   } else if (event.button == 2) {
-    for (var obj of objs) {
-      removeObj(obj);
-    }
+    event.target.gamedata && removeObj(event.target.gamedata);
     event.preventDefault();
     return false;
   }
@@ -76,7 +74,22 @@ function pointToGrid(event) {
   var main = $("#gamebody"),
       width = $(main).width(),
       height = $(main).height(),
-      ret = {x: Math.floor(event.clientX * gamestate.size.x / width),
-            y: Math.floor((event.clientY - 5) * gamestate.size.y / height)};
+      ret = {x: Math.floor(event.offsetX * gamestate.size.x / width),
+            y: Math.floor((event.offsetY - 5) * gamestate.size.y / height)};
   return ret;
+}
+function save() {
+  var file = new Blob(["window.leveldata="+JSON.stringify(scrubGameState(gamestate))], {type: "text"});
+    
+  var a = document.createElement("a"),
+          url = URL.createObjectURL(file);
+  a.href = url;
+  a.download = "level"+gamestate.levelId+".js";
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function() {
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);  
+  }, 0); 
+    
 }

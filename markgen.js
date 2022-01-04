@@ -11,8 +11,8 @@ window.makesq = function(tagname, parent, clazz, left, top, width, height, drop)
     var ret = make(tagname, parent, clazz);
     ret.style.left = left;
     ret.style.top = top ;
-    ret.style.width = width;
-    ret.style.height = height;
+    width && (ret.style.width = width);
+    height && (ret.style.height = height);
     ret.ondragover = function (e) { e.preventDefault(); };
     ret.ondrop = drop;
     return ret;
@@ -65,4 +65,23 @@ window.incTop = function (el, val) {
 }
 window.incLeft = function (el, val) {
     el.style.left = parseFloat(el.style.left) + val + "px";
+}
+window.updateURLParameter = function(url, param, paramVal){
+    var newAdditionalURL = "";
+    var tempArray = url.split("?");
+    var baseURL = tempArray[0];
+    var additionalURL = tempArray[1];
+    var temp = "";
+    if (additionalURL) {
+        tempArray = additionalURL.split("&");
+        for (var i=0; i<tempArray.length; i++){
+            if(tempArray[i].split('=')[0] != param){
+                newAdditionalURL += temp + tempArray[i];
+                temp = "&";
+            }
+        }
+    }
+
+    var rows_txt = temp + "" + param + "=" + paramVal;
+    return baseURL + "?" + newAdditionalURL + rows_txt;
 }
