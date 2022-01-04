@@ -25,24 +25,23 @@ function executeRules() {
     var searchChar = ruleName.charAt(0);
     var matchingWords = getWordsMatchingMask(searchChar);
     for (var matchingWord of matchingWords) {
-      executeRuleDir(searchChar, matchingWord, ruleName, { x: 1, y: 0 });
-      executeRuleDir(searchChar, matchingWord, ruleName, { x: 0, y: 1 });
+      executeRuleDir(searchChar, matchingWord, ruleName, { x: 1, y: 0, z: 0 });
+      executeRuleDir(searchChar, matchingWord, ruleName, { x: 0, y: 1, z: 0 });
     }
   }
   for (var i=gamestate.objects.length-1; i>=0;i--) {
     var obj = gamestate.objects[i];
     if (obj.win) {
-      var objsAtPos = findAtPosition(obj.x, obj.y);
+      var objsAtPos = findAtPosition(obj.x, obj.y, obj.z);
       if (objsAtPos.filter(o => o.you).length > 0) {
         particle(obj, "yellow", 100, 0.3);
         window.setTimeout(function () {
-          alert("You Win!");
           window.location = updateURLParameter(window.location.href, "level", gamestate.levelId + 1);
-        }, 200);
+        }, 1000);
       }
     }
     if (obj.shut) {
-      var objsAtPos = findAtPosition(obj.x, obj.y);
+      var objsAtPos = findAtPosition(obj.x, obj.y, obj.z);
       if (objsAtPos.filter(o => o.open).length > 0) {
         removeObj(obj);
         removeObj(objsAtPos[0]);
@@ -52,7 +51,7 @@ function executeRules() {
       move(obj, getDirCoordsFromDir(obj));
     }
     if (obj.sink) {
-      var objsAtPos = findAtPosition(obj.x, obj.y);
+      var objsAtPos = findAtPosition(obj.x, obj.y, obj.z);
       for (var sinking of objsAtPos) {
         if (obj == sinking) continue;
         removeObj(obj);
@@ -60,14 +59,14 @@ function executeRules() {
       }
     }
     if (obj.defeat) {
-      var objsAtPos = findAtPosition(obj.x, obj.y);
+      var objsAtPos = findAtPosition(obj.x, obj.y, obj.z);
       for (var defeated of objsAtPos) {
         if (defeated.you)
           removeObj(defeated);
       }
     }
     if (obj.hot) {
-      var objsAtPos = findAtPosition(obj.x, obj.y);
+      var objsAtPos = findAtPosition(obj.x, obj.y, obj.z);
       for (var melted of objsAtPos) {
         if (melted.melt)
           removeObj(melted);
@@ -102,7 +101,7 @@ function executeRuleDir(searchChar, matchingWord, ruleName, dir) {
     nextCharInd = 2,
     lastActor = matchingWord;
   while (nextCharInd <= ruleName.length) {
-    var nextWord = findAtPosition(lastActor.x + dir.x, lastActor.y + dir.y, true);
+    var nextWord = findAtPosition(lastActor.x + dir.x, lastActor.y + dir.y, lastActor.z + dir.z, true);
     if (nextWord.length > 0) {
       if (~wordMasks[searchChar].indexOf(nextWord[0].name)) { // TODO: multiple words on the same spot
         actors.push(nextWord[0]);

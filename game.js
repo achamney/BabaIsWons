@@ -3,7 +3,7 @@ var gamestate = {
     words:[],
     objects:[],
     levelId:1,
-    size: {x: 24, y: 18}
+    size: {x: 24, y: 18, z: 1}
 };
 var undoStack = [];
 window.selectedObj = {};
@@ -16,29 +16,38 @@ window.onload = function () {
   levelTag.onload = function() {
 
     makeGameState(levelnum || 1);
+    var width = $('#gamebody').width(),
+      height = $("#gamebody").height();
+    if (gamestate.size.z > 1) {
+      $('#gamebody').css("height", width * 18 / (30 * gamestate.size.z));
+    } else {
+      $('#gamebody').css("width", height * 30 / 18);
+    }
     drawGameState();
   };
   levelTag.src=`levels/level${levelnum}.js`;
   $("head")[0].appendChild(levelTag);
   $("#nextlevellink").attr("href",window.location.pathname +"?level="+(levelnum+1));
 
-  var height = $('#gamebody').height();
-  $('#gamebody').css("width", height * 30 / 18);
   $("body").keydown(function (event) {
-      if(event.keyCode == 37) {
-        moveYou({x: -1, y: 0});
-      }
-      else if(event.keyCode == 39) {
-        moveYou({x: 1, y: 0});
-      }
-      else if(event.keyCode == 38) {
-        moveYou({x: 0, y: -1});
-      }
-      else if(event.keyCode == 40) {
-        moveYou({x: 0, y: 1});
-      }else if(event.keyCode == 90) {
-        undo();
-      }
+    if (event.keyCode == 37) {
+      moveYou({ x: -1, y: 0, z: 0 });
+    }
+    else if (event.keyCode == 39) {
+      moveYou({ x: 1, y: 0, z: 0 });
+    }
+    else if (event.keyCode == 38) {
+      moveYou({ x: 0, y: -1, z: 0 });
+    }
+    else if (event.keyCode == 40) {
+      moveYou({ x: 0, y: 1, z: 0 });
+    } else if (event.keyCode == 87) {
+      moveYou({ x: 0, y: 0, z: 1 });
+    } else if (event.keyCode == 83) {
+      moveYou({ x: 0, y: 0, z: -1 });
+    } else if (event.keyCode == 90) {
+      undo();
+    }
   });
   window.setInterval(function () {
     for (var obj of gamestate.objects) {
@@ -125,17 +134,18 @@ function makeGameState(level) {
       gamestate = window.leveldata;
     } 
     gamestate.levelId=level;
+    gamestate.size.z = gamestate.size.z || 1;
 }
-function findAtPosition(i, j, excludeObjects) {
+function findAtPosition(i, j, k, excludeObjects) {
   var ret = [];
   if (!excludeObjects) {
     for(var obj of gamestate.objects) {
-      if (obj.x == i && obj.y == j)
+      if (obj.x == i && obj.y == j && obj.z == k)
         ret.push(obj);
     }
   }
   for(var obj of gamestate.words) {
-    if (obj.x == i && obj.y == j)
+    if (obj.x == i && obj.y == j && obj.z == k)
       ret.push(obj);
   }
   return ret;
@@ -145,25 +155,27 @@ function drawGameState() {
     main.innerHTML = "";
     var width = $(main).width(),
         height = $(main).height(),
-        gridx = width / gamestate.size.x,
+        gridx = width / gamestate.size.x / gamestate.size.z,
         gridy = height / gamestate.size.y,
+        gridz = width / gamestate.size.z,
         globalId = 1;
     for (var obj of gamestate.objects) {
         obj.dir = obj.dir || "r";
-        makeThing(main, obj, gridx, gridy, globalId++, true);
+        makeThing(main, obj, gridx, gridy, gridz, globalId++, true);
     }
     for (var obj of gamestate.words) {
-        makeThing(main, obj, gridx, gridy, globalId++, false);
+        makeThing(main, obj, gridx, gridy, gridz, globalId++, false);
     }
     executeRules();
 }
-function makeThing(parent, thing, gridx, gridy, globalId, isObject) {
+function makeThing(parent, thing, gridx, gridy, gridz, globalId, isObject) {
   var displayClass = isObject ? thing.name : "word " + thing.name+"word";
   if (~wordMasks.a.indexOf(thing.name)) {
     displayClass += " action";
   }
+  thing.z = thing.z || 0;
   var objdiv = makesq("div", parent, displayClass + " block "+thing.dir,
-    gridx * thing.x +"px",
+    (gridx * thing.x) + (thing.z * gridz) +"px",
     gridy * thing.y +"px",
     gridx+"px",
     gridy+"px");
@@ -186,12 +198,12 @@ function moveYou(dir) {
 }
 function move(gameobj,dir) {
 
-  var newPositionObjs = findAtPosition(gameobj.x + dir.x, gameobj.y + dir.y);
+  var newPositionObjs = findAtPosition(gameobj.x + dir.x, gameobj.y + dir.y, gameobj.z + dir.z);
   if (checkIsLockAndKey(gameobj, newPositionObjs)) {
     return true;
   }
   if(gameobj.swap) {
-    if (isOutside(gameobj.x+dir.x, gameobj.y+dir.y)) {
+    if (isOutside(gameobj.x+dir.x, gameobj.y+dir.y, gameobj.z + dir.z)) {
       if (gameobj.move) {
         reverseDir(gameobj);
       }
@@ -200,17 +212,18 @@ function move(gameobj,dir) {
     for (var newPosObj of newPositionObjs) {
       newPosObj.x = gameobj.x;
       newPosObj.y = gameobj.y;
+      newPosObj.z = gameobj.z;
       updateObjPosition(newPosObj, getDirCoordsFromDir(newPosObj));
     }
   }
-  else if(findIsStop(gameobj.x, gameobj.y, dir)) {
+  else if(findIsStop(dir, gameobj.x, gameobj.y, gameobj.z)) {
     if (gameobj.move) {
       reverseDir(gameobj);
     }
     return false;
   }
 
-  newPositionObjs = findAtPosition(gameobj.x + dir.x, gameobj.y + dir.y);
+  newPositionObjs = findAtPosition(gameobj.x + dir.x, gameobj.y + dir.y, gameobj.z + dir.z);
   var cantMove = false;
   for(var pushObj of newPositionObjs) {
     if (isStop(pushObj) && !pushObj.you){
@@ -222,9 +235,10 @@ function move(gameobj,dir) {
   }
   if(cantMove)
     return false;
-  var behindPositionObjs = findAtPosition(gameobj.x - dir.x, gameobj.y - dir.y);
+  var behindPositionObjs = findAtPosition(gameobj.x - dir.x, gameobj.y - dir.y, gameobj.z - dir.z);
   gameobj.x += dir.x;
   gameobj.y += dir.y;
+  gameobj.z += dir.z;
   updateObjPosition(gameobj, dir);
   for(var beh of behindPositionObjs) {
     if (beh.pull) {
@@ -242,28 +256,31 @@ function updateObjPosition(obj, dir) {
   var main = $("#gamebody"),
       width = $(main).width(),
       height = $(main).height(),
-      gridx = width / gamestate.size.x,
+      gridx = width / gamestate.size.x / gamestate.size.z,
       gridy = height / gamestate.size.y;
   var objdiv = $("#"+obj.id);
-  redoDirections(objdiv, dir);
+  if(dir.x != 0 || dir.y != 0) {
+    redoDirections(objdiv, dir);
+  }
   obj.dir = coordDirToText(dir);
-  objdiv.css("left", obj.x * gridx+"px");
+  objdiv.css("left", (obj.x * gridx) + (obj.z * width / gamestate.size.z)+"px");
   objdiv.css("top", obj.y * gridy+"px");
 }
-function findIsStop(x, y, dir) {
-  if (isOutside(x+dir.x, y+dir.y)) {
+function findIsStop(dir, x, y, z) {
+  if (isOutside(x+dir.x, y+dir.y, z + dir.z)) {
     return true;
   }
-  var nextObjs = findAtPosition(x + dir.x, y + dir.y);
+  var nextObjs = findAtPosition(x + dir.x, y + dir.y, z + dir.z);
   if(nextObjs.length == 0) return false;
   for (var obj of nextObjs) {
     if (obj.stop && !obj.you && !obj.shut) return true; // TODO: shut?
-    if (obj.push) return findIsStop(x + dir.x, y + dir.y, dir);
+    if (obj.push) return findIsStop(dir, x + dir.x, y + dir.y, z + dir.z);
   }
   return false;
 }
-function isOutside(x,y) {
-  if(x<0 || y<0 ||x >= gamestate.size.x || y >= gamestate.size.y){
+function isOutside(x,y,z) {
+  if(x<0 || y<0 ||x >= gamestate.size.x || y >= gamestate.size.y 
+    || z<0  || z >= gamestate.size.z){
     return true;
   }
   return false;

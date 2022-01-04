@@ -48,7 +48,7 @@ function makeOrModObject(event) {
   var gridpos = pointToGrid(event);
   if (event.button == 0) {
     if (!event.target.gamedata) {
-      window.selectedObj = {name: window.selectedObj.name || defaultObj,x: gridpos.x, y: gridpos.y};
+      window.selectedObj = {name: window.selectedObj.name || defaultObj,x: gridpos.x, y: gridpos.y, z: gridpos.z};
       $('#objname').val(window.selectedObj.name);
       $('#objdir').val(window.selectedObj.dir);
       if (makemode == "object") {
@@ -74,8 +74,10 @@ function pointToGrid(event) {
   var main = $("#gamebody"),
       width = $(main).width(),
       height = $(main).height(),
-      ret = {x: Math.floor(event.offsetX * gamestate.size.x / width),
-            y: Math.floor((event.offsetY - 5) * gamestate.size.y / height)};
+      x = Math.floor((event.offsetX % (width / gamestate.size.z))/gamestate.size.x),
+      z = Math.floor(event.offsetX / (width / gamestate.size.z)),
+      y = Math.floor((event.offsetY - 5) * gamestate.size.y / height);
+      ret = {x: x, y: y, z: z};
   return ret;
 }
 function save() {
