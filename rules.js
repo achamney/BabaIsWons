@@ -27,6 +27,7 @@ function executeRules() {
     for (var matchingWord of matchingWords) {
       executeRuleDir(searchChar, matchingWord, ruleName, { x: 1, y: 0, z: 0 });
       executeRuleDir(searchChar, matchingWord, ruleName, { x: 0, y: 1, z: 0 });
+      executeRuleDir(searchChar, matchingWord, ruleName, { x: 0, y: 0, z: -1 });
     }
   }
   for (var i=gamestate.objects.length-1; i>=0;i--) {
