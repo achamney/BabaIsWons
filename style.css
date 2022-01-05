@@ -145,6 +145,25 @@ body {
 .word.keyword {
   color:#FF9;
 }
+.word.notword {
+  color: red;
+}
+.tier {
+  position:absolute;
+  pointer-events: none;
+}
+.tier.tier1 {
+  background-color: #011;
+}
+.tier.tier2 {
+  background-color: #112;
+}
+.info3d {
+  pointer-events: none;
+  position:absolute;
+  margin-top: 10px;
+  color: white;
+}
 /* Add Animation */
 @keyframes animatetop {
     from {

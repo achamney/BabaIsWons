@@ -1,23 +1,31 @@
 var wordMasks = {
   "a": ["you", "stop", "push", "win", "open", "shut", "move", "sink",
-    "defeat", "hot", "melt", "swap", "pull", "active"],
+    "defeat", "hot", "melt", "swap", "pull", "drop"],
   "v": ["is"],
   "h": ["has"],
   "c": ["and"],
+  "x": ["not"],
   "n": ["baba", "rock", "wall", "flag", "keke", "water", "skull",
-    "lava", "grass", "jelly", "crab", "star", "love", "door", "key"]
+    "lava", "grass", "jelly", "crab", "star", "love", "door", "key", "text"]
 };
 var validSequences = {
   "nva": executeAdjective, "nvn": executeEquality, "nhn": executeHas,
+  "nvxa": executeNAdjective, "nvxn": executeNEquality, "nhn": executeHas,
   "nvaca": executeConjAdj, "nvacaca": executeConjAdj, "nvacacaca": executeConjAdj,
   "ncnva": executeMultiAdj, "ncncnva": executeMultiAdj, "ncncncnva": executeMultiAdj
 };
 var runningEqualities = [],
-  runningChangeless = [];
+  runningChangeless = [],
+  runningAdjectives = [],
+  runningNAdjectives = [],
+  runningNEqualities = [];
 function executeRules() {
   removeAllAdjectives(gamestate);
   runningEqualities = [];
   runningChangeless = [];
+  runningAdjectives = [];
+  runningNAdjectives = [];
+  runningNEqualities = [];
   for (var word of gamestate.words) {
     word.push = true;
   }
@@ -30,58 +38,78 @@ function executeRules() {
       executeRuleDir(searchChar, matchingWord, ruleName, { x: 0, y: 0, z: -1 });
     }
   }
-  for (var i=gamestate.objects.length-1; i>=0;i--) {
+  for (var actors of runningAdjectives) {
+    if (runningNAdjectives.filter(n=>n[0].name == actors[0].name && n[3].name == actors[2].name).length>0) {
+      continue;
+    }
+    executeAdjectiveImpl(actors);
+  }
+  for (var i = gamestate.objects.length - 1; i >= 0; i--) {
     var obj = gamestate.objects[i];
-    if (obj.win) {
-      var objsAtPos = findAtPosition(obj.x, obj.y, obj.z);
-      if (objsAtPos.filter(o => o.you).length > 0) {
-        particle(obj, "yellow", 100, 0.3);
-        window.setTimeout(function () {
-          window.location = updateURLParameter(window.location.href, "level", gamestate.levelId + 1);
-        }, 1000);
-      }
-    }
-    if (obj.shut) {
-      var objsAtPos = findAtPosition(obj.x, obj.y, obj.z);
-      if (objsAtPos.filter(o => o.open).length > 0) {
-        removeObj(obj);
-        removeObj(objsAtPos[0]);
-      }
-    }
-    if (obj.move) {
-      move(obj, getDirCoordsFromDir(obj));
-    }
-    if (obj.sink) {
-      var objsAtPos = findAtPosition(obj.x, obj.y, obj.z);
-      for (var sinking of objsAtPos) {
-        if (obj == sinking) continue;
-        removeObj(obj);
-        removeObj(sinking);
-      }
-    }
-    if (obj.defeat) {
-      var objsAtPos = findAtPosition(obj.x, obj.y, obj.z);
-      for (var defeated of objsAtPos) {
-        if (defeated.you)
-          removeObj(defeated);
-      }
-    }
-    if (obj.hot) {
-      var objsAtPos = findAtPosition(obj.x, obj.y, obj.z);
-      for (var melted of objsAtPos) {
-        if (melted.melt)
-          removeObj(melted);
-      }
-    }
+    runAdjectiveStep(obj);
+  }
+  for (var i = gamestate.words.length - 1; i >= 0; i--) {
+    var obj = gamestate.words[i];
+    runAdjectiveStep(obj);
   }
   for (var actors of runningEqualities) {
-    if (~runningChangeless.indexOf(actors[0].name)) {
+    if (~runningChangeless.indexOf(actors[0].name) ||
+      runningNEqualities.filter(n=>n[0].name == actors[0].name && n[3].name == actors[2].name).length>0) {
       continue;
     }
     for (var obj of gamestate.objects) {
       if (actors[0].name == obj.name) {
         changeObj(obj, actors[2].name);
       }
+    }
+  }
+}
+function runAdjectiveStep(obj) {
+  if (obj.shut) {
+    var objsAtPos = findAtPosition(obj.x, obj.y, obj.z);
+    if (objsAtPos.filter(o => o.open).length > 0) {
+      removeObj(obj);
+      removeObj(objsAtPos[0]);
+    }
+  }
+  if (obj.move) {
+    move(obj, getDirCoordsFromDir(obj));
+  }
+  if (obj.sink) {
+    var objsAtPos = findAtPosition(obj.x, obj.y, obj.z);
+    for (var sinking of objsAtPos) {
+      if (obj == sinking) continue;
+      removeObj(obj);
+      removeObj(sinking);
+    }
+  }
+  if (obj.defeat) {
+    var objsAtPos = findAtPosition(obj.x, obj.y, obj.z);
+    for (var defeated of objsAtPos) {
+      if (defeated.you)
+        removeObj(defeated);
+    }
+  }
+  if (obj.hot) {
+    var objsAtPos = findAtPosition(obj.x, obj.y, obj.z);
+    for (var melted of objsAtPos) {
+      if (melted.melt)
+        removeObj(melted);
+    }
+  }
+  if (obj.drop) {
+    var dir = {x:0,y:0,z:-1};
+    while(!findIsStop(dir, obj.x, obj.y, obj.z)) {
+      move(obj, dir);
+    }
+  }
+  if (obj.win) {
+    var objsAtPos = findAtPosition(obj.x, obj.y, obj.z);
+    if (objsAtPos.filter(o => o.you).length > 0) {
+      particle(obj, "yellow", 100, 0.3);
+      window.setTimeout(function () {
+        window.location = updateURLParameter(window.location.href, "level", gamestate.levelId + 1);
+      }, 1000);
     }
   }
 }
@@ -128,14 +156,27 @@ function getWordsMatchingMask(char) {
   return ret;
 }
 function executeAdjective(actors) {
+  runningAdjectives.push(actors);
+  executeBase(actors);
+}
+function executeAdjectiveImpl(actors) {
   var nouns = gamestate.objects.filter(o => o.name == actors[0].name);
+  if (actors[0].name == "text") {
+    nouns = gamestate.words;
+  }
   for (var noun of nouns) {
     noun[actors[2].name] = true;
   }
+}
+function executeNAdjective(actors) {
+  runningNAdjectives.push(actors);
   executeBase(actors);
 }
 function executeHas(actors) {
   var nouns = gamestate.objects.filter(o => o.name == actors[0].name);
+  if (actors[0].name == "text") {
+    nouns = gamestate.words;
+  }
   for (var noun of nouns) {
     noun.has = actors[2].name;
   }
@@ -147,6 +188,16 @@ function executeEquality(actors) {
   } else {
     runningEqualities.push(actors);
   }
+  executeBase(actors);
+}
+function executeNEquality(actors) {
+  if (actors[0].name == actors[3].name) {
+    for (var i=gamestate.objects.length -1;i>=0;i--) {
+      var obj = gamestate.objects[i];
+      removeObj(obj);
+    }
+  } 
+  runningNEqualities.push(actors);
   executeBase(actors);
 }
 function removeAllAdjectives(gs, dontRemoveTextClasses) {

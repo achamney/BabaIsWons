@@ -74,7 +74,7 @@ function pointToGrid(event) {
   var main = $("#gamebody"),
       width = $(main).width(),
       height = $(main).height(),
-      x = Math.floor((event.offsetX % (width / gamestate.size.z))/gamestate.size.x),
+      x = Math.floor((event.offsetX % (width / gamestate.size.z))/ (width / gamestate.size.z / gamestate.size.x)),
       z = Math.floor(event.offsetX / (width / gamestate.size.z)),
       y = Math.floor((event.offsetY - 5) * gamestate.size.y / height);
       ret = {x: x, y: y, z: z};

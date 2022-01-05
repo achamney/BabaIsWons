@@ -65,6 +65,7 @@ function undo() {
     var savedObj = lastGameState.objects.filter(o=>o.id==obj.id)[0];
     obj.x = savedObj.x;
     obj.y = savedObj.y;
+    obj.z = savedObj.z;
     updateObjPosition(obj, getDirCoordsFromDir(savedObj));
     obj.name = savedObj.name;
   }
@@ -83,6 +84,7 @@ function undo() {
     var savedObj = lastGameState.words.filter(o=>o.id==obj.id)[0];
     obj.x = savedObj.x;
     obj.y = savedObj.y;
+    obj.z = savedObj.z;
     updateObjPosition(obj, {x:1,y:0});
     obj.name = savedObj.name;
   }
@@ -151,22 +153,30 @@ function findAtPosition(i, j, k, excludeObjects) {
   return ret;
 }
 function drawGameState() {
-    var main = get("gamebody");
-    main.innerHTML = "";
-    var width = $(main).width(),
-        height = $(main).height(),
-        gridx = width / gamestate.size.x / gamestate.size.z,
-        gridy = height / gamestate.size.y,
-        gridz = width / gamestate.size.z,
-        globalId = 1;
-    for (var obj of gamestate.objects) {
-        obj.dir = obj.dir || "r";
-        makeThing(main, obj, gridx, gridy, gridz, globalId++, true);
+  var main = get("gamebody");
+  main.innerHTML = "";
+  var width = $(main).width(),
+    height = $(main).height(),
+    gridx = width / gamestate.size.x / gamestate.size.z,
+    gridy = height / gamestate.size.y,
+    gridz = width / gamestate.size.z,
+    globalId = 1;
+  var runningLeft = gridz;
+  for (var i = 0; i < gamestate.size.z - 1; i++) {
+    makesq("div", main, "tier tier" + (i + 1), runningLeft, 0, gridz, height);
+    if (i == 0) {
+      makesq("h2", main, "info3d", 10, 0).innerHTML = "{ Press W and S to navigate between planes }";
     }
-    for (var obj of gamestate.words) {
-        makeThing(main, obj, gridx, gridy, gridz, globalId++, false);
-    }
-    executeRules();
+    runningLeft += gridz;
+  }
+  for (var obj of gamestate.objects) {
+    obj.dir = obj.dir || "r";
+    makeThing(main, obj, gridx, gridy, gridz, globalId++, true);
+  }
+  for (var obj of gamestate.words) {
+    makeThing(main, obj, gridx, gridy, gridz, globalId++, false);
+  }
+  executeRules();
 }
 function makeThing(parent, thing, gridx, gridy, gridz, globalId, isObject) {
   var displayClass = isObject ? thing.name : "word " + thing.name+"word";
@@ -183,6 +193,7 @@ function makeThing(parent, thing, gridx, gridy, gridz, globalId, isObject) {
   thing.id = "id"+globalId;
   if (!isObject) {
     objdiv.innerHTML = thing.name;
+    objdiv.style["font-size"] = fontMapping(gridx);
   }
   objdiv.gamedata = thing;
 }
@@ -302,4 +313,7 @@ function redoDirections(obj, dir) {
   else if (dir.x == 1) { obj.addClass("r"); }
   else if (dir.y == -1) { obj.addClass("u"); }
   else if (dir.y == 1) { obj.addClass("d"); }
+}
+function fontMapping(gridx) {
+  return gridx/2.7+"px";
 }
