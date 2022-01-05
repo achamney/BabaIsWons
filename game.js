@@ -5,7 +5,6 @@ var gamestate = {
     levelId:1,
     size: {x: 24, y: 18, z: 1}
 };
-var undoStack = [];
 window.selectedObj = {};
 window.onload = function () {
 
@@ -28,6 +27,7 @@ window.onload = function () {
   levelTag.src=`levels/level${levelnum}.js`;
   $("head")[0].appendChild(levelTag);
   $("#nextlevellink").attr("href",window.location.pathname +"?level="+(levelnum+1));
+  $("#prevlevellink").attr("href",window.location.pathname +"?level="+(levelnum-1));
 
   $("body").keydown(function (event) {
     if (event.keyCode == 37) {
@@ -58,42 +58,6 @@ window.onload = function () {
       }
     }
   }, 700);
-}
-function undo() {
-  if(undoStack.length == 0) return;
-  var lastGameStateText = undoStack.pop(),
-    lastGameState = JSON.parse(lastGameStateText);
-  for(var obj of gamestate.objects) {
-    var savedObj = lastGameState.objects.filter(o=>o.id==obj.id)[0];
-    obj.x = savedObj.x;
-    obj.y = savedObj.y;
-    obj.z = savedObj.z;
-    updateObjPosition(obj, getDirCoordsFromDir(savedObj));
-    obj.name = savedObj.name;
-  }
-  var deletedObjs = lastGameState.objects.filter(o=>{
-    var ret = true;
-    for(var test of gamestate.objects){
-      if(o.id==test.id)
-        ret = false;
-    }
-    return ret;
-  });
-  for(var deleted of deletedObjs) {
-    gamestate.objects.push(deleted);
-  }
-  for(var obj of gamestate.words) {
-    var savedObj = lastGameState.words.filter(o=>o.id==obj.id)[0];
-    obj.x = savedObj.x;
-    obj.y = savedObj.y;
-    obj.z = savedObj.z;
-    updateObjPosition(obj, {x:1,y:0});
-    obj.name = savedObj.name;
-  }
-  executeRules();
-  if (deletedObjs.length > 0) {
-    drawGameState();
-  }
 }
 function getDirCoordsFromDir(obj) {
   if(obj.dir=="r") return {x:1,y:0,z:0};
@@ -171,10 +135,10 @@ function drawGameState() {
   drawControlHints(main);
   for (var obj of gamestate.objects) {
     obj.dir = obj.dir || "r";
-    makeThing(main, obj, gridx, gridy, gridz, globalId++, true);
+    makeThing(main, obj, gridx, gridy, gridz, "id"+globalId++, true);
   }
   for (var obj of gamestate.words) {
-    makeThing(main, obj, gridx, gridy, gridz, globalId++, false);
+    makeThing(main, obj, gridx, gridy, gridz, "id"+globalId++, false);
   }
   executeRules();
 }
@@ -189,8 +153,8 @@ function makeThing(parent, thing, gridx, gridy, gridz, globalId, isObject) {
     gridy * thing.y +"px",
     gridx+"px",
     gridy+"px");
-  objdiv.id = "id"+globalId;
-  thing.id = "id"+globalId;
+  objdiv.id = globalId;
+  thing.id = globalId;
   if (!isObject) {
     objdiv.innerHTML = thing.name;
     objdiv.style["font-size"] = fontMapping(gridx);
@@ -198,14 +162,15 @@ function makeThing(parent, thing, gridx, gridy, gridz, globalId, isObject) {
   objdiv.gamedata = thing;
 }
 function moveYou(dir) {
-  undoStack.push(JSON.stringify(gamestate));
-  for(var obj of gamestate.objects) {
-    if (obj.you) {
+  var yous = gamestate.objects.filter(o => o.you);
+  if (yous.length > 0) {
+    undoStack.push(JSON.stringify(gamestate));
+    for(var obj of yous) {
       particle(obj, "white", 1, 0.01);
       move(obj, dir);
     }
+    executeRules();
   }
-  executeRules();
 }
 function move(gameobj,dir) {
 

@@ -38,6 +38,17 @@ function executeRules() {
       executeRuleDir(searchChar, matchingWord, ruleName, { x: 0, y: 0, z: -1 });
     }
   }
+  for (var actors of runningEqualities) {
+    if (~runningChangeless.indexOf(actors[0].name) ||
+      runningNEqualities.filter(n=>n[0].name == actors[0].name && n[3].name == actors[2].name).length>0) {
+      continue;
+    }
+    for (var obj of gamestate.objects) {
+      if (actors[0].name == obj.name) {
+        changeObj(obj, actors[2].name);
+      }
+    }
+  }
   for (var actors of runningAdjectives) {
     if (runningNAdjectives.filter(n=>n[0].name == actors[0].name && n[3].name == actors[2].name).length>0) {
       continue;
@@ -51,17 +62,6 @@ function executeRules() {
   for (var i = gamestate.words.length - 1; i >= 0; i--) {
     var obj = gamestate.words[i];
     runAdjectiveStep(obj);
-  }
-  for (var actors of runningEqualities) {
-    if (~runningChangeless.indexOf(actors[0].name) ||
-      runningNEqualities.filter(n=>n[0].name == actors[0].name && n[3].name == actors[2].name).length>0) {
-      continue;
-    }
-    for (var obj of gamestate.objects) {
-      if (actors[0].name == obj.name) {
-        changeObj(obj, actors[2].name);
-      }
-    }
   }
 }
 function runAdjectiveStep(obj) {
