@@ -9,8 +9,8 @@ var undoStack = [];
 window.selectedObj = {};
 window.onload = function () {
 
-  var urlParams = window.location.href.split("?")[1];
-  var levelnum = urlParams && Math.floor(urlParams.split("=")[1]);
+  var urlParams = new URLSearchParams(window.location.search);
+  var levelnum = Math.floor(urlParams.get("level"));
   var levelTag = document.createElement("script");
   levelTag.type="text/javascript";
   levelTag.onload = function() {
