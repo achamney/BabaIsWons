@@ -5,6 +5,7 @@ $(document).ready(function(){
   $("#objbutton").click(function (){window.makemode = "object";});
   $("#wordbutton").click(function (){window.makemode = "word";});
   $("#save").click(function (){save();});
+  $("#load").click(function (){load();});
 
   $("#gamebody").mousedown(function (event) {
     makeOrModObject(event);
@@ -24,7 +25,7 @@ $(document).ready(function(){
   window.setInterval(function(){
     var levelcode = get("levelcode");
     var scrubbedGameState = scrubGameState(gamestate)
-    levelcode.innerHTML = JSON.stringify(scrubbedGameState);
+    levelcode.value = JSON.stringify(scrubbedGameState);
   }, 10000)
 });
 
@@ -94,4 +95,9 @@ function save() {
       window.URL.revokeObjectURL(url);  
   }, 0); 
     
+}
+function load() {
+  var levelcode = JSON.parse(get("levelcode").value);
+  window.gamestate = levelcode;
+  drawGameState();
 }

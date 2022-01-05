@@ -45,6 +45,8 @@ window.onload = function () {
       moveYou({ x: 0, y: 0, z: 1 });
     } else if (event.keyCode == 83) {
       moveYou({ x: 0, y: 0, z: -1 });
+    } else if (event.keyCode == 32) {
+      executeRules();
     } else if (event.keyCode == 90) {
       undo();
     }
@@ -94,11 +96,11 @@ function undo() {
   }
 }
 function getDirCoordsFromDir(obj) {
-  if(obj.dir=="r") return {x:1,y:0};
-  else if(obj.dir=="l") return {x:-1,y:0};
-  else if(obj.dir=="u") return {x:0,y:-1};
-  else if(obj.dir=="d") return {x:0,y:1};
-  else return {x:0,y:1};
+  if(obj.dir=="r") return {x:1,y:0,z:0};
+  else if(obj.dir=="l") return {x:-1,y:0,z:0};
+  else if(obj.dir=="u") return {x:0,y:-1,z:0};
+  else if(obj.dir=="d") return {x:0,y:1,z:0};
+  else return {x:0,y:1,z:0};
 }
 function coordDirToText(dir) {
   if(dir.x==1) return "r";
@@ -164,11 +166,9 @@ function drawGameState() {
   var runningLeft = gridz;
   for (var i = 0; i < gamestate.size.z - 1; i++) {
     makesq("div", main, "tier tier" + (i + 1), runningLeft, 0, gridz, height);
-    if (i == 0) {
-      makesq("h2", main, "info3d", 10, 0).innerHTML = "{ Press W and S to navigate between planes }";
-    }
     runningLeft += gridz;
   }
+  drawControlHints(main);
   for (var obj of gamestate.objects) {
     obj.dir = obj.dir || "r";
     makeThing(main, obj, gridx, gridy, gridz, globalId++, true);
@@ -316,4 +316,18 @@ function redoDirections(obj, dir) {
 }
 function fontMapping(gridx) {
   return gridx/2.7+"px";
+}
+function drawControlHints(main) {
+  if (gamestate.levelId >= 18 && gamestate.levelId <= 20) {
+    makesq("h2", main, "controlInfo", 10, 0).innerHTML = "{ Press W and S to navigate between planes }";
+  }
+  else if (gamestate.levelId >= 1 && gamestate.levelId <= 1) {
+    makesq("h2", main, "controlInfo", 10, 0).innerHTML = "{ Press &#8592; &#8593; &#8594; &#8595; to move }";
+  }
+  else if (gamestate.levelId >= 4 && gamestate.levelId <= 4) {
+    makesq("h2", main, "controlInfo", 10, 0).innerHTML = "{ Press Z to undo }";
+  }
+  else if (gamestate.levelId >= 11 && gamestate.levelId <= 11) {
+    makesq("h2", main, "controlInfo", 10, 0).innerHTML = "{ Press Space Bar to wait }";
+  }
 }

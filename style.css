@@ -158,11 +158,12 @@ body {
 .tier.tier2 {
   background-color: #112;
 }
-.info3d {
+.controlInfo {
   pointer-events: none;
   position:absolute;
-  margin-top: 10px;
+  margin-top: 0px;
   color: white;
+  z-index:1;
 }
 /* Add Animation */
 @keyframes animatetop {
