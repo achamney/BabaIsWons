@@ -283,7 +283,7 @@ function fontMapping(gridx) {
   return gridx/2.7+"px";
 }
 function drawControlHints(main) {
-  if (gamestate.levelId >= 18 && gamestate.levelId <= 20) {
+  if (gamestate.levelId >= 18 && gamestate.levelId <= 21) {
     makesq("h2", main, "controlInfo", 10, 0).innerHTML = "{ Press W and S to navigate between planes }";
   }
   else if (gamestate.levelId >= 1 && gamestate.levelId <= 1) {

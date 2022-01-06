@@ -157,8 +157,9 @@ body {
 .controlInfo {
   pointer-events: none;
   position:absolute;
-  margin-top: 0px;
-  color: white;
+  margin-top: -30px;
+  margin-left: 130px;
+  color: black;
   z-index:1;
 }
 /* Add Animation */

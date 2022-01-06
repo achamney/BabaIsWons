@@ -56,6 +56,13 @@ window.clone = function(thing) {
     }
     return newthing;
 }
+window.copyArray = function(array) {
+    var newArray = [];
+    for (var key of array) {
+        newArray.push(key);
+    }
+    return newArray;
+}
 window.deepClone = function (thing) {
     return JSON.parse(JSON.stringify(thing));
 }

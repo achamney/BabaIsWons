@@ -18,17 +18,54 @@ var runningEqualities = [],
   runningChangeless = [],
   runningAdjectives = [],
   runningNAdjectives = [],
-  runningNEqualities = [];
+  runningNEqualities = [],
+  allSentences = [];
 function executeRules() {
-  removeAllAdjectives(gamestate);
+  preExecuteStep();
+  allSentences = [];
+  var oldRules = copyArray(allSentences);
+  findAllSentences();
+  while (sentencesHaveChanged(allSentences, oldRules)) {
+    removeAllAdjectives(gamestate);
+    for (var word of gamestate.words) {
+      word.push = true;
+    }
+    for (var actors of runningEqualities) {
+      if (~runningChangeless.indexOf(actors[0].name) ||
+        runningNEqualities.filter(n=>n[0].name == actors[0].name && n[3].name == actors[2].name).length>0) {
+        continue;
+      }
+      for (var obj of gamestate.objects) {
+        if (actors[0].name == obj.name) {
+          changeObj(obj, actors[2].name);
+        }
+      }
+    }
+    for (var actors of runningAdjectives) {
+      if (runningNAdjectives.filter(n=>n[0].name == actors[0].name && n[3].name == actors[2].name).length>0) {
+        continue;
+      }
+      executeAdjectiveImpl(actors);
+    }
+    for (var i = gamestate.objects.length - 1; i >= 0; i--) {
+      var obj = gamestate.objects[i];
+      runAdjectiveStep(obj);
+    }
+    for (var i = gamestate.words.length - 1; i >= 0; i--) {
+      var obj = gamestate.words[i];
+      runAdjectiveStep(obj);
+    }
+    oldRules = copyArray(allSentences);
+    findAllSentences();
+  }
+}
+function findAllSentences() {
   runningEqualities = [];
   runningChangeless = [];
   runningAdjectives = [];
   runningNAdjectives = [];
   runningNEqualities = [];
-  for (var word of gamestate.words) {
-    word.push = true;
-  }
+  allSentences = [];
   for (var ruleName in validSequences) {
     var searchChar = ruleName.charAt(0);
     var matchingWords = getWordsMatchingMask(searchChar);
@@ -37,31 +74,6 @@ function executeRules() {
       executeRuleDir(searchChar, matchingWord, ruleName, { x: 0, y: 1, z: 0 });
       executeRuleDir(searchChar, matchingWord, ruleName, { x: 0, y: 0, z: -1 });
     }
-  }
-  for (var actors of runningEqualities) {
-    if (~runningChangeless.indexOf(actors[0].name) ||
-      runningNEqualities.filter(n=>n[0].name == actors[0].name && n[3].name == actors[2].name).length>0) {
-      continue;
-    }
-    for (var obj of gamestate.objects) {
-      if (actors[0].name == obj.name) {
-        changeObj(obj, actors[2].name);
-      }
-    }
-  }
-  for (var actors of runningAdjectives) {
-    if (runningNAdjectives.filter(n=>n[0].name == actors[0].name && n[3].name == actors[2].name).length>0) {
-      continue;
-    }
-    executeAdjectiveImpl(actors);
-  }
-  for (var i = gamestate.objects.length - 1; i >= 0; i--) {
-    var obj = gamestate.objects[i];
-    runAdjectiveStep(obj);
-  }
-  for (var i = gamestate.words.length - 1; i >= 0; i--) {
-    var obj = gamestate.words[i];
-    runAdjectiveStep(obj);
   }
 }
 function runAdjectiveStep(obj) {
@@ -90,13 +102,6 @@ function runAdjectiveStep(obj) {
         removeObj(defeated);
     }
   }
-  if (obj.shift) {
-    var objsAtPos = findAtPosition(obj.x, obj.y, obj.z);
-    for (var shifted of objsAtPos) {
-      if (shifted != obj)
-        move(shifted, getDirCoordsFromDir(obj));
-    }
-  }
   if (obj.hot) {
     var objsAtPos = findAtPosition(obj.x, obj.y, obj.z);
     for (var melted of objsAtPos) {
@@ -117,6 +122,17 @@ function runAdjectiveStep(obj) {
       window.setTimeout(function () {
         window.location = updateURLParameter(window.location.href, "level", gamestate.levelId + 1);
       }, 1000);
+    }
+  }
+}
+function preExecuteStep() {
+  for (var obj of gamestate.objects) {
+    if (obj.shift) {
+      var objsAtPos = findAtPosition(obj.x, obj.y, obj.z);
+      for (var shifted of objsAtPos) {
+        if (shifted != obj)
+          move(shifted, getDirCoordsFromDir(obj));
+      }
     }
   }
 }
@@ -244,4 +260,27 @@ function executeBase(actors) {
   for (var actor of actors) {
     $("#"+actor.id).addClass("active");
   }
+  allSentences.push(actors);
+}
+function sentencesHaveChanged(s1, s2) {
+  if (s1.length != s2.length) {
+    return true;
+  }
+  var simps1 = convertRulesToSimple(s1), simps2 = convertRulesToSimple(s2);
+  for (var s1a of simps1) {
+    if (!~simps2.indexOf(s1a)) {
+      return true;
+    }
+  }
+}
+function convertRulesToSimple(rules) {
+  var ret = [];
+  for (var r of rules) {
+    var retStr = "";
+    for (var actor of r) {
+      retStr += actor.name + " ";
+    }
+    ret.push (retStr);
+  }
+  return ret;
 }
