@@ -53,6 +53,9 @@ function makeOrModObject(event) {
       $('#objname').val(window.selectedObj.name);
       $('#objdir').val(window.selectedObj.dir);
       if (makemode == "object") {
+        if (!~wordMasks.n.indexOf(window.selectedObj.name)) {
+          window.selectedObj.name = defaultObj;
+        } 
         gamestate.objects.push(window.selectedObj);
       } else if (makemode == "word") {
         gamestate.words.push(window.selectedObj);

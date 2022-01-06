@@ -1,6 +1,6 @@
 var wordMasks = {
   "a": ["you", "stop", "push", "win", "open", "shut", "move", "sink",
-    "defeat", "hot", "melt", "swap", "pull", "drop"],
+    "defeat", "hot", "melt", "swap", "pull", "drop", "shift"],
   "v": ["is"],
   "h": ["has"],
   "c": ["and"],
@@ -88,6 +88,13 @@ function runAdjectiveStep(obj) {
     for (var defeated of objsAtPos) {
       if (defeated.you)
         removeObj(defeated);
+    }
+  }
+  if (obj.shift) {
+    var objsAtPos = findAtPosition(obj.x, obj.y, obj.z);
+    for (var shifted of objsAtPos) {
+      if (shifted != obj)
+        move(shifted, getDirCoordsFromDir(obj));
     }
   }
   if (obj.hot) {

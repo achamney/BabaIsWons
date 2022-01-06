@@ -151,12 +151,8 @@ body {
 .tier {
   position:absolute;
   pointer-events: none;
-}
-.tier.tier1 {
-  background-color: #011;
-}
-.tier.tier2 {
-  background-color: #112;
+  background-color: white;
+  opacity: 0.05;
 }
 .controlInfo {
   pointer-events: none;

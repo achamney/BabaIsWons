@@ -129,7 +129,7 @@ function drawGameState() {
     globalId = 1;
   var runningLeft = gridz;
   for (var i = 0; i < gamestate.size.z - 1; i++) {
-    makesq("div", main, "tier tier" + (i + 1), runningLeft, 0, gridz, height);
+    makesq("div", main, "tier tier" + (i + 1), runningLeft, 0, width - runningLeft, height);
     runningLeft += gridz;
   }
   drawControlHints(main);
