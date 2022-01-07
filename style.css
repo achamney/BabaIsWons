@@ -148,6 +148,9 @@ body {
 .word.notword {
   color: red;
 }
+button.selected {
+  background-color: #99F;
+}
 .tier {
   position:absolute;
   pointer-events: none;

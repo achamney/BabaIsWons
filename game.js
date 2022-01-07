@@ -10,25 +10,18 @@ window.onload = function () {
 
   var urlParams = new URLSearchParams(window.location.search);
   var levelnum = Math.floor(urlParams.get("level"));
-  var levelTag = document.createElement("script");
-  levelTag.type="text/javascript";
-  levelTag.onload = function() {
-
-    makeGameState(levelnum || 1);
-    var width = $('#gamebody').width(),
-      height = $("#gamebody").height();
-    if (gamestate.size.z > 1) {
-      $('#gamebody').css("height", width * 18 / (30 * gamestate.size.z));
-    } else {
-      $('#gamebody').css("width", height * 30 / 18);
-    }
-    drawGameState();
-  };
-  levelTag.src=`levels/level${levelnum}.js`;
-  $("head")[0].appendChild(levelTag);
+  var communityLevelId = urlParams.get("levelid");
+  if (levelnum) {
+    loadPremadeLevel(levelnum);
+  } else if (communityLevelId) {
+    loadCommunityLevel(communityLevelId);
+    levelnum = 1;
+  } else {
+    setWindowSize();
+  }
   $("#nextlevellink").attr("href",window.location.pathname +"?level="+(levelnum+1));
   $("#prevlevellink").attr("href",window.location.pathname +"?level="+(levelnum-1));
-
+  
   $("body").keydown(function (event) {
     if (event.keyCode == 37) {
       moveYou({ x: -1, y: 0, z: 0 });
@@ -47,6 +40,7 @@ window.onload = function () {
       moveYou({ x: 0, y: 0, z: -1 });
     } else if (event.keyCode == 32) {
       executeRules();
+      updateRuleUI();
     } else if (event.keyCode == 90) {
       undo();
     }
@@ -58,6 +52,33 @@ window.onload = function () {
       }
     }
   }, 700);
+}
+function loadPremadeLevel(levelnum) {
+  var levelTag = document.createElement("script");
+  levelTag.type="text/javascript";
+  levelTag.onload = function() {
+    makeGameState(levelnum || 1);
+    setWindowSize();
+    drawGameState();
+  };
+  levelTag.src=`levels/level${levelnum}.js`;
+  $("head")[0].appendChild(levelTag);
+}
+async function loadCommunityLevel(communityLevelId) {
+  var comgamestate = await netService.getGameState(communityLevelId);
+  window.gamestate = comgamestate;
+  comgamestate.levelId = communityLevelId;
+  setWindowSize();
+  drawGameState();
+}
+function setWindowSize() {
+  var width = $('#gamebody').width(),
+      height = $("#gamebody").height();
+  if (gamestate.size.z > 1) {
+    $('#gamebody').css("height", width * 18 / (30 * gamestate.size.z));
+  } else {
+    $('#gamebody').css("width", height * 30 / 18);
+  }
 }
 function getDirCoordsFromDir(obj) {
   if(obj.dir=="r") return {x:1,y:0,z:0};
@@ -119,6 +140,7 @@ function findAtPosition(i, j, k, excludeObjects) {
   return ret;
 }
 function drawGameState() {
+  $("#levelname").val(gamestate.name).html(gamestate.name);
   var main = get("gamebody");
   main.innerHTML = "";
   var width = $(main).width(),
@@ -170,6 +192,7 @@ function moveYou(dir) {
       move(obj, dir);
     }
     executeRules();
+    updateRuleUI();
   }
 }
 function move(gameobj,dir) {
@@ -294,5 +317,13 @@ function drawControlHints(main) {
   }
   else if (gamestate.levelId >= 11 && gamestate.levelId <= 11) {
     makesq("h2", main, "controlInfo", 10, 0).innerHTML = "{ Press Space Bar to wait }";
+  }
+}
+function updateRuleUI() {
+  var body = get("ruleUI");
+  body.innerHTML = "";
+  var simple = convertRulesToSimple(allSentences);
+  for (var rule of simple) {
+    make("span", body).innerHTML = rule + "<br/>";
   }
 }

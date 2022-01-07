@@ -4,23 +4,28 @@
     <title>Baba Is Wons</title>
 </head>
 <body oncontextmenu="return false;">
-  <h3><a href="" id="nextlevellink">Next Level</a></h3>
+  <h3><label for="levelname">Level Name: </label> <input id="levelname" name="levelname">
+    &nbsp;&nbsp;<a href="" id="nextlevellink">Next Level</a></h3>
   <div id="gamebody">
 
   </div>
-  <span>
-    Selected Object Name: <input id="objname">
-    <br />
-    Selected Object Direction: <input id="objdir">
-  </span>
-  <textarea id = "levelcode" rows = 3 cols = 40>
-  </textarea>
-  <button id="objbutton">Object</button><button id="wordbutton">Word</button>
-  &nbsp; &nbsp; <button id="save">Save</button><button id="load">Load</button>
+  <div>
+    <span>
+      Selected Object Name: <input id="objname">
+      <br />
+      Selected Object Direction: <input id="objdir">
+    </span>
+    <textarea id = "levelcode" rows = 3 cols = 40>
+    </textarea>
+    <button id="objbutton" class="selected">Object</button><button id="wordbutton">Word</button>
+    &nbsp; &nbsp; <button id="save">Save</button><button id="load">Load</button>&nbsp; &nbsp; <button id="savecloud">Save Cloud</button>
+  </div>
+  <div id="ruleUI"> </div>
 </body>
 
 <script src="jquery-3.4.1.min.js"></script>
 <script src="markgen.js"></script>
+<script src="netcode.js"></script>
 <script src="levelmaker.js"></script>
 <script src="particle.js"></script>
 <script src="rules.js"></script>

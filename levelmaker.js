@@ -2,9 +2,10 @@
 var defaultObj = "wall";
 window.makemode = "object";
 $(document).ready(function(){
-  $("#objbutton").click(function (){window.makemode = "object";});
-  $("#wordbutton").click(function (){window.makemode = "word";});
+  $("#objbutton").click(function (){window.makemode = "object"; $(this).addClass("selected"); $("#wordbutton").removeClass("selected")});
+  $("#wordbutton").click(function (){window.makemode = "word"; $(this).addClass("selected"); $("#objbutton").removeClass("selected")});
   $("#save").click(function (){save();});
+  $("#savecloud").click(function (){savecloud();});
   $("#load").click(function (){load();});
 
   $("#gamebody").mousedown(function (event) {
@@ -85,6 +86,7 @@ function pointToGrid(event) {
   return ret;
 }
 function save() {
+  window.gamestate.name = $("#levelname").val();
   var file = new Blob(["window.leveldata="+JSON.stringify(scrubGameState(gamestate))], {type: "text"});
     
   var a = document.createElement("a"),
@@ -98,6 +100,18 @@ function save() {
       window.URL.revokeObjectURL(url);  
   }, 0); 
     
+}
+async function savecloud() {
+  window.gamestate.name = $("#levelname").val();
+  var urlParams = new URLSearchParams(window.location.search);
+  var communityLevelId = urlParams.get("levelid");
+  if (!communityLevelId) {
+    var ret = await netService.makeNewLevel(window.gamestate);
+    window.location = window.location.pathname + "?levelid="+ret["_id"];
+  } else {
+    await netService.setGameState(window.gamestate, communityLevelId);
+    window.location = window.location.pathname + "?levelid="+communityLevelId;
+  }
 }
 function load() {
   var levelcode = JSON.parse(get("levelcode").value);
