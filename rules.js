@@ -1,6 +1,6 @@
 var wordMasks = {
   "a": ["you", "stop", "push", "win", "open", "shut", "move", "sink",
-    "defeat", "hot", "melt", "swap", "pull", "drop", "shift"],
+    "defeat", "hot", "melt", "swap", "pull", "drop", "shift", "float"],
   "v": ["is"],
   "h": ["has"],
   "c": ["and"],
@@ -79,7 +79,7 @@ function findAllSentences() {
 function runAdjectiveStep(obj) {
   if (obj.shut) {
     var objsAtPos = findAtPosition(obj.x, obj.y, obj.z);
-    if (objsAtPos.filter(o => o.open).length > 0) {
+    if (objsAtPos.filter(o => o.open && o.float == obj.float).length > 0) {
       removeObj(obj);
       removeObj(objsAtPos[0]);
     }
@@ -90,7 +90,7 @@ function runAdjectiveStep(obj) {
   if (obj.sink) {
     var objsAtPos = findAtPosition(obj.x, obj.y, obj.z);
     for (var sinking of objsAtPos) {
-      if (obj == sinking) continue;
+      if (obj == sinking && obj.float == sinking.float) continue;
       removeObj(obj);
       removeObj(sinking);
     }
@@ -98,14 +98,14 @@ function runAdjectiveStep(obj) {
   if (obj.defeat) {
     var objsAtPos = findAtPosition(obj.x, obj.y, obj.z);
     for (var defeated of objsAtPos) {
-      if (defeated.you)
+      if (defeated.you && obj.float == defeated.float)
         removeObj(defeated);
     }
   }
   if (obj.hot) {
     var objsAtPos = findAtPosition(obj.x, obj.y, obj.z);
     for (var melted of objsAtPos) {
-      if (melted.melt)
+      if (melted.melt && obj.float == melted.float)
         removeObj(melted);
     }
   }
@@ -117,7 +117,7 @@ function runAdjectiveStep(obj) {
   }
   if (obj.win) {
     var objsAtPos = findAtPosition(obj.x, obj.y, obj.z);
-    if (objsAtPos.filter(o => o.you).length > 0) {
+    if (objsAtPos.filter(o => o.you && o.float == obj.float).length > 0) {
       particle(obj, "yellow", 100, 0.3);
       window.setTimeout(function () {
         window.location = updateURLParameter(window.location.href, "level", gamestate.levelId + 1);
@@ -189,6 +189,7 @@ function executeAdjectiveImpl(actors) {
   }
   for (var noun of nouns) {
     noun[actors[2].name] = true;
+    $("#"+noun.id).addClass(actors[2].name);
   }
 }
 function executeNAdjective(actors) {
@@ -235,8 +236,10 @@ function removeAllAdjectives(gs, dontRemoveTextClasses) {
   }
 }
 function removeAdjectives(obj) {
+  var objdom = $("#"+obj.id);
   for (var adjective of wordMasks.a) {
     delete obj[adjective];
+    objdom.removeClass(adjective);
   }
   delete obj.has;
 }

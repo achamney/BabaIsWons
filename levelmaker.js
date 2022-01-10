@@ -23,13 +23,24 @@ $(document).ready(function(){
       drawGameState();
     }
   });
-  window.setInterval(function(){
+  window.setTimeout(function(){
     var levelcode = get("levelcode");
     var scrubbedGameState = scrubGameState(gamestate)
     levelcode.value = JSON.stringify(scrubbedGameState);
-  }, 10000)
+    $("#xsize").val(gamestate.size.x);
+    $("#ysize").val(gamestate.size.y);
+    $("#zsize").val(gamestate.size.z);
+    changeBaseGameFunctions();
+  }, 3000)
 });
-
+function changeBaseGameFunctions(){
+  window.moveYou = function(dir) {
+    undoStack.push(JSON.stringify(gamestate));
+    move(window.selectedObj, dir);
+    executeRules();
+    updateRuleUI();
+  }
+}
 function moveAllDir(dir) {
   for(var obj of gamestate.objects) {
     obj.y += dir.y;
@@ -47,10 +58,11 @@ function scrubGameState(gamestate) {
   return scrubbed;
 }
 function makeOrModObject(event) {
+  undoStack.push(JSON.stringify(gamestate));
   var gridpos = pointToGrid(event);
   if (event.button == 0) {
     if (!event.target.gamedata) {
-      window.selectedObj = {name: window.selectedObj.name || defaultObj,x: gridpos.x, y: gridpos.y, z: gridpos.z};
+      window.selectedObj = {name: window.selectedObj.name || defaultObj,x: gridpos.x, y: gridpos.y, z: gridpos.z, id: "id"+globalId};
       $('#objname').val(window.selectedObj.name);
       $('#objdir').val(window.selectedObj.dir);
       if (makemode == "object") {
@@ -73,6 +85,7 @@ function makeOrModObject(event) {
     return false;
   }
   drawGameState();
+  $("#"+window.selectedObj.id).addClass("selected");
 }
 
 function pointToGrid(event) {
@@ -103,6 +116,11 @@ function save() {
 }
 async function savecloud() {
   window.gamestate.name = $("#levelname").val();
+  window.gamestate.size.x = $("#xsize").val();
+  window.gamestate.size.y = $("#ysize").val();
+  window.gamestate.size.z = $("#zsize").val();
+  $("#ysize").val(gamestate.size.y);
+  $("#zsize").val(gamestate.size.z);
   var urlParams = new URLSearchParams(window.location.search);
   var communityLevelId = urlParams.get("levelid");
   if (!communityLevelId) {

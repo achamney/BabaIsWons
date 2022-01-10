@@ -4,7 +4,7 @@ var gamestate = {
     objects:[],
     levelId:1,
     size: {x: 24, y: 18, z: 1}
-};
+},globalId = 1;
 window.selectedObj = {};
 window.onload = function () {
 
@@ -147,8 +147,8 @@ function drawGameState() {
     height = $(main).height(),
     gridx = width / gamestate.size.x / gamestate.size.z,
     gridy = height / gamestate.size.y,
-    gridz = width / gamestate.size.z,
-    globalId = 1;
+    gridz = width / gamestate.size.z;
+  globalId = 1;
   var runningLeft = gridz;
   for (var i = 0; i < gamestate.size.z - 1; i++) {
     makesq("div", main, "tier tier" + (i + 1), runningLeft, 0, width - runningLeft, height);
