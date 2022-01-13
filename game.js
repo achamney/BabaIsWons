@@ -92,6 +92,8 @@ function coordDirToText(dir) {
   if(dir.x==-1) return "l";
   if(dir.y==1) return "d";
   if(dir.y==-1) return "u";
+  if(dir.z==-1) return "i";
+  if(dir.z==-1) return "o";
 }
 function changeObj(obj, newName) {
   var objdiv = $("#"+obj.id);
@@ -154,6 +156,14 @@ function drawGameState() {
     makesq("div", main, "tier tier" + (i + 1), runningLeft, 0, width - runningLeft, height);
     runningLeft += gridz;
   }
+  for (var j=0;j<gamestate.size.z;j++) {
+    for (var i=0;i<gamestate.size.x;i++) {
+      makesq("div", main, "gridline gridx"+i, i*gridx + j*gridz,0,gridx,height);
+    }
+  }
+  for (var i=0;i<gamestate.size.y;i++) {
+    makesq("div", main, "gridline gridy"+i, 0,i*gridy,width,gridy);
+  }
   drawControlHints(main);
   for (var obj of gamestate.objects) {
     obj.dir = obj.dir || "r";
@@ -187,9 +197,14 @@ function moveYou(dir) {
   var yous = gamestate.objects.filter(o => o.you);
   if (yous.length > 0) {
     undoStack.push(JSON.stringify(gamestate));
+    $(".gridline").css("outline","1px solid #111");
     for(var obj of yous) {
       particle(obj, "white", 1, 0.01);
       move(obj, dir);
+      if(gamestate.size.z > 1){
+        $(".gridline.gridx"+obj.x).css("outline","1px solid #522");
+        $(".gridline.gridy"+obj.y).css("outline","1px solid #522");
+      }
     }
     executeRules();
     updateRuleUI();

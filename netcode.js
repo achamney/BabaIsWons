@@ -7,6 +7,7 @@ function JsonBoxyService() {
     var MASTERURL = "https://jsonboxy.herokuapp.com/box_048253cc19be56e86f59/";
     this.setGameState = async function (gamestate, levelId, callback) {
         var cacheBuster = Math.floor(Math.random()*10000);
+        var loadingIcon = $(".loading").show();
         return await $.ajax({
             url: MASTERURL+levelId+"?cb="+cacheBuster,
             type: "PUT",
@@ -14,6 +15,7 @@ function JsonBoxyService() {
             contentType: "application/json; charset=utf-8",
             dataType: "json",
             success: function (data, textStatus, jqXHR) {
+                loadingIcon.hide();
                 var uri = data["_id"];
                 console.log(uri);
                 if (callback)
@@ -22,10 +24,14 @@ function JsonBoxyService() {
         });
     }
     this.getGameState = async function(level) {
+        var loadingIcon = $(".loading").show();
         var cacheBuster = Math.floor(Math.random()*10000);
-        return await $.get(MASTERURL+level+"?cb="+cacheBuster);
+        var ret = await $.get(MASTERURL+level+"?cb="+cacheBuster);
+        loadingIcon.hide();
+        return ret;
     }
     this.makeNewLevel = async function(gamestate) {
+        var loadingIcon = $(".loading").show();
         return await $.ajax({
             url: MASTERURL,
             type: "POST",
@@ -33,6 +39,7 @@ function JsonBoxyService() {
             contentType: "application/json; charset=utf-8",
             dataType: "json",
             success: function (data, textStatus, jqXHR) {
+                loadingIcon.hide();
                 var uri = data["_id"];
                 console.log(uri);
             }

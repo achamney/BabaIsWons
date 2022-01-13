@@ -6,6 +6,7 @@ $(document).ready(function(){
   $("#wordbutton").click(function (){window.makemode = "word"; $(this).addClass("selected"); $("#objbutton").removeClass("selected")});
   $("#save").click(function (){save();});
   $("#savecloud").click(function (){savecloud();});
+  $("#cloneCloud").click(function (){cloneLevel();});
   $("#load").click(function (){load();});
 
   $("#gamebody").mousedown(function (event) {
@@ -135,4 +136,9 @@ function load() {
   var levelcode = JSON.parse(get("levelcode").value);
   window.gamestate = levelcode;
   drawGameState();
+}
+async function cloneLevel() {
+  delete window.gamestate["_id"];
+  var ret = await netService.makeNewLevel(window.gamestate);
+  window.location = window.location.pathname + "?levelid="+ret["_id"];
 }
