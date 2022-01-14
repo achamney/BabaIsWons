@@ -102,22 +102,28 @@ function changeObj(obj, newName) {
   obj.name = newName;
 }
 function removeObj(obj) {
-  if(obj.has) {
-    changeObj(obj, obj.has);
-    removeAdjectives(obj);
-  } else {
-    for (var i=gamestate.objects.length-1;i>=0;i--) {
-      if (gamestate.objects[i] == obj) {
-        gamestate.objects.splice(i, 1);
-      }
+  for (var i=gamestate.objects.length-1;i>=0;i--) {
+    if (gamestate.objects[i] == obj) {
+      gamestate.objects.splice(i, 1);
     }
-    for (var i=gamestate.words.length-1;i>=0;i--) {
-      if (gamestate.words[i] == obj) {
-        gamestate.words.splice(i, 1);
-      }
-    }
-    $("#"+obj.id).remove();
   }
+  for (var i=gamestate.words.length-1;i>=0;i--) {
+    if (gamestate.words[i] == obj) {
+      gamestate.words.splice(i, 1);
+    }
+  }
+  $("#"+obj.id).remove();
+  if(obj.has) {
+    for(var h of obj.has) {
+      var newObj = deepClone(obj);
+      removeAdjectives(newObj);
+      newObj.name = h;
+      gamestate.objects.push(newObj);
+      obj.dir = obj.dir || "r";
+      makeThing($("#gamebody"), newObj, null, null, null, "id"+globalId++, true);
+    }
+    applyAdjectives();
+  } 
   particle(obj, "#733", 10, 0.1);
 }
 function makeGameState(level) {
@@ -143,26 +149,26 @@ function findAtPosition(i, j, k, excludeObjects) {
 }
 function drawGameState() {
   $("#levelname").val(gamestate.name).html(gamestate.name);
-  var main = get("gamebody");
-  main.innerHTML = "";
-  var width = $(main).width(),
-    height = $(main).height(),
+  var main = $("#gamebody");
+  main[0].innerHTML = "";
+  var width = main.width(),
+    height = main.height(),
     gridx = width / gamestate.size.x / gamestate.size.z,
     gridy = height / gamestate.size.y,
     gridz = width / gamestate.size.z;
   globalId = 1;
   var runningLeft = gridz;
   for (var i = 0; i < gamestate.size.z - 1; i++) {
-    makesq("div", main, "tier tier" + (i + 1), runningLeft, 0, width - runningLeft, height);
+    makesq("div", main[0], "tier tier" + (i + 1), runningLeft, 0, width - runningLeft, height);
     runningLeft += gridz;
   }
   for (var j=0;j<gamestate.size.z;j++) {
     for (var i=0;i<gamestate.size.x;i++) {
-      makesq("div", main, "gridline gridx"+i, i*gridx + j*gridz,0,gridx,height);
+      makesq("div", main[0], "gridline gridx"+i, i*gridx + j*gridz,0,gridx,height);
     }
   }
   for (var i=0;i<gamestate.size.y;i++) {
-    makesq("div", main, "gridline gridy"+i, 0,i*gridy,width,gridy);
+    makesq("div", main[0], "gridline gridy"+i, 0,i*gridy,width,gridy);
   }
   drawControlHints(main);
   for (var obj of gamestate.objects) {
@@ -175,12 +181,19 @@ function drawGameState() {
   executeRules();
 }
 function makeThing(parent, thing, gridx, gridy, gridz, globalId, isObject) {
+  if (!gridx) {
+    var width = parent.width(),
+    height = parent.height();
+    gridx = width / gamestate.size.x / gamestate.size.z;
+    gridy = height / gamestate.size.y;
+    gridz = width / gamestate.size.z;
+  }
   var displayClass = isObject ? thing.name : "word " + thing.name+"word";
   if (~wordMasks.a.indexOf(thing.name)) {
     displayClass += " action";
   }
   thing.z = thing.z || 0;
-  var objdiv = makesq("div", parent, displayClass + " block "+thing.dir,
+  var objdiv = makesq("div", parent[0], displayClass + " block "+thing.dir,
     (gridx * thing.x) + (thing.z * gridz) +"px",
     gridy * thing.y +"px",
     gridx+"px",
@@ -240,10 +253,10 @@ function move(gameobj,dir) {
   newPositionObjs = findAtPosition(gameobj.x + dir.x, gameobj.y + dir.y, gameobj.z + dir.z);
   var cantMove = false;
   for(var pushObj of newPositionObjs) {
-    if (isStop(pushObj) && !pushObj.you){
+    if (isStop(pushObj) && !pushObj.you && !pushObj.push){
       return false;
     }
-    if (canPush(pushObj)) {
+    if (canPush(pushObj) ) {
       cantMove = cantMove || move(pushObj, dir);
     }
   }
@@ -287,8 +300,8 @@ function findIsStop(dir, x, y, z) {
   var nextObjs = findAtPosition(x + dir.x, y + dir.y, z + dir.z);
   if(nextObjs.length == 0) return false;
   for (var obj of nextObjs) {
-    if (obj.stop && !obj.you && !obj.shut) return true; // TODO: shut?
-    if (obj.push) return findIsStop(dir, x + dir.x, y + dir.y, z + dir.z);
+    if (obj.push || (obj.you && obj.stop)) return findIsStop(dir, x + dir.x, y + dir.y, z + dir.z);
+    if (obj.stop && !obj.you && !obj.shut) return true; // TODO: shut weirdness?
   }
   return false;
 }
@@ -322,16 +335,16 @@ function fontMapping(gridx) {
 }
 function drawControlHints(main) {
   if (gamestate.levelId >= 18 && gamestate.levelId <= 21) {
-    makesq("h2", main, "controlInfo", 10, 0).innerHTML = "{ Press W and S to navigate between planes }";
+    makesq("h2", main[0], "controlInfo", 10, 0).innerHTML = "{ Press W and S to navigate between planes }";
   }
   else if (gamestate.levelId >= 1 && gamestate.levelId <= 1) {
-    makesq("h2", main, "controlInfo", 10, 0).innerHTML = "{ Press &#8592; &#8593; &#8594; &#8595; to move }";
+    makesq("h2", main[0], "controlInfo", 10, 0).innerHTML = "{ Press &#8592; &#8593; &#8594; &#8595; to move }";
   }
   else if (gamestate.levelId >= 4 && gamestate.levelId <= 4) {
-    makesq("h2", main, "controlInfo", 10, 0).innerHTML = "{ Press Z to undo }";
+    makesq("h2", main[0], "controlInfo", 10, 0).innerHTML = "{ Press Z to undo }";
   }
   else if (gamestate.levelId >= 11 && gamestate.levelId <= 11) {
-    makesq("h2", main, "controlInfo", 10, 0).innerHTML = "{ Press Space Bar to wait }";
+    makesq("h2", main[0], "controlInfo", 10, 0).innerHTML = "{ Press Space Bar to wait }";
   }
 }
 function updateRuleUI() {

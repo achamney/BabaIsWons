@@ -11,7 +11,7 @@ var wordMasks = {
 };
 var validSequences = {
     "^(x*n)(cx*n)*v((x*n)|(x*a))((cx*n)|(cx*a))*$": executeIs,
-    "^n(cn)*hn(cn)*$": executeHas
+    "^(x*n)(cx*n)*h(x*n)(cx*n)*$": executeHas
   },
   validStartingChars = ['x', 'n'];
 var runningEqualities = [],
@@ -19,6 +19,7 @@ var runningEqualities = [],
   runningAdjectives = [],
   runningNAdjectives = [],
   runningNEqualities = [],
+  runningHas = [],
   allSentences = [];
 function executeRules() {
   preExecuteStep();
@@ -31,22 +32,13 @@ function executeRules() {
     for (var word of gamestate.words) {
       word.push = true;
     }
-    for (var actors of runningEqualities) {
-      if (~runningChangeless.indexOf(actors[0]) ||
-        runningNEqualities.filter(n=>n[0] == actors[0] && n[3] == actors[2]).length>0) {
-        continue;
-      }
-      for (var obj of gamestate.objects) {
-        if (actors[0] == obj.name) {
-          changeObj(obj, actors[2]);
-        }
-      }
-    }
-    for (var actors of runningAdjectives) {
-      if (runningNAdjectives.filter(n=>n[0] == actors[0] && n[3] == actors[2]).length>0) {
-        continue;
-      }
-      executeAdjectiveImpl(actors);
+    applyChanges();
+    applyAdjectives();
+    for (var actors of runningHas) {
+      gamestate.objects.filter(o=>o.name == actors[0]).forEach(o=> {
+        o.has=o.has || [];
+        o.has.push(actors[2]);
+      });
     }
     for (var i = gamestate.objects.length - 1; i >= 0; i--) {
       var obj = gamestate.objects[i];
@@ -66,6 +58,7 @@ function findAllSentences() {
   runningAdjectives = [];
   runningNAdjectives = [];
   runningNEqualities = [];
+  runningHas = [];
   allSentences = [];
   gamestate.words.sort((a,b)=>a.x - b.x);
   for (var ruleName in validSequences) {
@@ -95,6 +88,27 @@ function findAllSentences() {
     }
   }
 }
+function applyChanges() {
+  var dereferencedChanges = [];
+  for (var actors of runningEqualities) {
+    if (~runningChangeless.indexOf(actors[0]) ||
+      runningNEqualities.filter(n=>n[0] == actors[0] && n[3] == actors[2]).length>0) {
+      continue;
+    }
+    for (var obj of gamestate.objects) {
+      if (actors[0] == obj.name) {
+        dereferencedChanges.push({id:obj.id, name:actors[2]});
+      }
+    }
+  }
+  for(var deref of dereferencedChanges) {
+    var obj = gamestate.objects.filter(o=>o.id == deref.id)[0];
+    changeObj(obj, deref.name);
+  }
+  if (dereferencedChanges.length > 0) {
+    applyAdjectives();
+  }
+}
 function runAdjectiveStep(obj) {
   if (obj.shut) {
     var objsAtPos = findAtPosition(obj.x, obj.y, obj.z);
@@ -102,9 +116,6 @@ function runAdjectiveStep(obj) {
       removeObj(obj);
       removeObj(objsAtPos[0]);
     }
-  }
-  if (obj.move) {
-    move(obj, getDirCoordsFromDir(obj));
   }
   if (obj.sink) {
     var objsAtPos = findAtPosition(obj.x, obj.y, obj.z);
@@ -153,6 +164,17 @@ function preExecuteStep() {
           move(shifted, getDirCoordsFromDir(obj));
       }
     }
+    if (obj.move) {
+      move(obj, getDirCoordsFromDir(obj));
+    }
+  }
+}
+function applyAdjectives(){
+  for (var actors of runningAdjectives) {
+    if (runningNAdjectives.filter(n=>n[0] == actors[0] && n[3] == actors[2]).length>0) {
+      continue;
+    }
+    executeAdjectiveImpl(actors);
   }
 }
 function checkIsLockAndKey(obj1, objs2) {
@@ -290,15 +312,52 @@ function executeAdjectiveImpl(actors) {
     $("#"+noun.id).addClass(actors[2]);
   }
 }
-function executeHas(actors) {
-  /*var nouns = gamestate.objects.filter(o => o.name == actors[0].name);
-  if (actors[0].name == "text") {
-    nouns = gamestate.words;
+function executeHas(actors, dir) {
+  var leftNouns = {},
+    rightNouns = {},
+    hasIndex = 0,
+    notted = false;
+  for (hasIndex = 0; hasIndex < actors.length; hasIndex++) {
+    var curActor = actors[hasIndex];
+    if (curActor.name == "has") {
+      curActor.used = curActor.used || {r:false, d: false, i:false }
+      if (curActor.used[coordDirToText(dir)]) {
+        return;
+      }
+      curActor.used[coordDirToText(dir)] = true;
+      break;
+    }
+    else if (curActor.name == "not") {
+      notted = !notted;
+    } else if(curActor.name == "and") {
+      continue;
+    } else {
+      addActorsToList(curActor, leftNouns, notted);
+      notted = false;
+    }
   }
-  for (var noun of nouns) {
-    noun.has = actors[2].name;
+  for (var i = hasIndex+1; i < actors.length; i++) {
+    var curActor = actors[i];
+    if (curActor.name == "has") { // Left here in case of off by one error?
+      break;
+    }
+    else if (curActor.name == "not") {
+      notted = !notted;
+    } else if (curActor.name == "and") {
+      continue;
+    } else {
+      if (getCharFromActor(curActor) == "n") {
+        addActorsToList(curActor, rightNouns, notted);
+        notted = false;
+      } 
+    }
   }
-  executeBase(actors);*/
+  for (var leftN in leftNouns) {
+    for (var rightN in rightNouns) {
+      runningHas.push([leftN, "has", rightN]);
+    }
+  }
+  executeBase(actors);
 }
 function removeAllAdjectives(gs, dontRemoveTextClasses) {
   for (var obj of gs.objects) {
