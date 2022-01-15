@@ -1,13 +1,13 @@
 var wordMasks = {
   "a": ["you", "stop", "push", "win", "open", "shut", "move", "sink",
-    "defeat", "hot", "melt", "swap", "pull", "drop", "shift", "float"],
+    "defeat", "hot", "melt", "swap", "pull", "drop", "shift", "float", "weak"],
   "v": ["is"],
   "h": ["has"],
   "c": ["and"],
   "x": ["not"],
   "n": ["baba", "rock", "wall", "flag", "keke", "water", "skull",
     "lava", "grass", "jelly", "crab", "star", "love", "door", "key", 
-    "text", "bolt"]
+    "text", "bolt", "box"]
 };
 var validSequences = {
     "^(x*n)(cx*n)*v((x*n)|(x*a))((cx*n)|(cx*a))*$": executeIs,
@@ -130,6 +130,16 @@ function runAdjectiveStep(obj) {
     for (var defeated of objsAtPos) {
       if (defeated.you && obj.float == defeated.float)
         removeObj(defeated);
+    }
+  }
+  if (obj.weak) {
+    var objsAtPos = findAtPosition(obj.x, obj.y, obj.z);
+    if (objsAtPos.length > 0) {
+      if (objsAtPos.length == 1 && objsAtPos[0] == obj) {
+
+      } else {
+        removeObj(obj);
+      }
     }
   }
   if (obj.hot) {

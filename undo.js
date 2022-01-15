@@ -46,13 +46,8 @@ function undo() {
       }
       return ret;
     });
-    var width = $(main).width(),
-      height = $(main).height(),
-      gridx = width / gamestate.size.x / gamestate.size.z,
-      gridy = height / gamestate.size.y,
-      gridz = width / gamestate.size.z;
     for(var deleted of deletedObjs) {
       newElements.push(deleted);
-      makeThing(main[0], deleted, gridx, gridy, gridz, deleted.id, newElements == gamestate.objects);
+      makeThing(main, deleted, null, null, null, deleted.id, newElements == gamestate.objects);
     }
   }

@@ -17,10 +17,11 @@ window.onload = function () {
     loadCommunityLevel(communityLevelId);
     levelnum = 1;
   } else {
+    $(".modal").show().css("opacity",1);
     setWindowSize();
   }
-  $("#nextlevellink").attr("href",window.location.pathname +"?level="+(levelnum+1));
-  $("#prevlevellink").attr("href",window.location.pathname +"?level="+(levelnum-1));
+  $("#nextlevellink").attr("href",window.location.pathname +"?levelid="+findLevelByIndex(communityLevelId, 1));
+  $("#prevlevellink").attr("href",window.location.pathname +"?levelid="+findLevelByIndex(communityLevelId, -1));
   
   $("body").keydown(function (event) {
     if (event.keyCode == 37) {
@@ -52,6 +53,14 @@ window.onload = function () {
       }
     }
   }, 700);
+}
+function findLevelByIndex(levelid, adder) {
+  var worlds = window.worlds;
+  var joinedLevels = [];
+  for (var worldname in worlds) {
+    joinedLevels = joinedLevels.concat(worlds[worldname]);
+  }
+  return joinedLevels[joinedLevels.indexOf(levelid) + adder];
 }
 function loadPremadeLevel(levelnum) {
   var levelTag = document.createElement("script");
@@ -225,7 +234,8 @@ function moveYou(dir) {
 }
 function move(gameobj,dir) {
 
-  var newPositionObjs = findAtPosition(gameobj.x + dir.x, gameobj.y + dir.y, gameobj.z + dir.z);
+  var newPositionObjs = findAtPosition(gameobj.x + dir.x, gameobj.y + dir.y, gameobj.z + dir.z),
+      findStopChain = [gameobj];
   if (checkIsLockAndKey(gameobj, newPositionObjs)) {
     return true;
   }
@@ -243,9 +253,15 @@ function move(gameobj,dir) {
       updateObjPosition(newPosObj, getDirCoordsFromDir(newPosObj));
     }
   }
-  else if(findIsStop(dir, gameobj.x, gameobj.y, gameobj.z)) {
+  else if(findIsStop(dir, gameobj.x, gameobj.y, gameobj.z, findStopChain)) {
     if (gameobj.move) {
       reverseDir(gameobj);
+    }
+    for (var i = findStopChain.length - 1; i >= 0; i--) {
+      var find = findStopChain[i];
+      if (find.weak) {
+        removeObj(find);
+      }
     }
     return false;
   }
@@ -293,13 +309,14 @@ function updateObjPosition(obj, dir) {
   objdiv.css("left", (obj.x * gridx) + (obj.z * width / gamestate.size.z)+"px");
   objdiv.css("top", obj.y * gridy+"px");
 }
-function findIsStop(dir, x, y, z) {
+function findIsStop(dir, x, y, z, findChain) {
   if (isOutside(x+dir.x, y+dir.y, z + dir.z)) {
     return true;
   }
   var nextObjs = findAtPosition(x + dir.x, y + dir.y, z + dir.z);
   if(nextObjs.length == 0) return false;
   for (var obj of nextObjs) {
+    findChain && findChain.push(obj);
     if (obj.push || (obj.you && obj.stop)) return findIsStop(dir, x + dir.x, y + dir.y, z + dir.z);
     if (obj.stop && !obj.you && !obj.shut) return true; // TODO: shut weirdness?
   }

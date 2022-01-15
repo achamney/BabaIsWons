@@ -7,6 +7,7 @@ $(document).ready(function(){
   $("#save").click(function (){save();});
   $("#savecloud").click(function (){savecloud();});
   $("#cloneCloud").click(function (){cloneLevel();});
+  $("#testbutton").click(function (){testlevel();});
   $("#load").click(function (){load();});
 
   $("#gamebody").mousedown(function (event) {
@@ -34,6 +35,9 @@ $(document).ready(function(){
     changeBaseGameFunctions();
   }, 3000)
 });
+function testlevel() {
+  window.open(window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port: '')+"?levelid="+gamestate.levelId);
+}
 function changeBaseGameFunctions(){
   window.moveYou = function(dir) {
     undoStack.push(JSON.stringify(gamestate));

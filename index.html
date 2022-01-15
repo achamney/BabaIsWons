@@ -1,6 +1,7 @@
 <html>
 <head>
     <link type="text/css" href="style.css" rel="stylesheet" />
+    <link rel="icon" type="image/png" href="/img/favicon.png">
     <title>Baba Is 3D</title>
 </head>
 <body>
@@ -12,6 +13,15 @@
   </div>
   <div id="ruleUI"> </div>
   <div class="loading" style="display:none;">Loading</div>
+  <div class="modal" style="display: none;">
+    <h2>
+      World Select
+    </h2>
+    <span onclick="window.location='?levelid=61e1d0fd7dd2580015d2a044'"><h3>Overworld</h3><img src="img/overworld.png" width="200px"/></span>
+    <span onclick="window.location='?levelid=61e1d1cd7dd2580015d2a04c'"><h3>The Lake</h3><img src="img/thelake.png" width="200px"/></span>
+    <span onclick="window.location='?levelid=61dc9d364f80c300151cf338'"><h3>Solitary Island</h3><img src="img/solitaryisland.png" width="200px"/></span>
+    <span onclick="window.location='?levelid=61e20ae38bab1e0015f357c3'"><h3>Temple Ruins</h3><img src="img/templeruins.png" width="200px"/></span>
+  </div>
 </body>
 
 <script src="jquery-3.4.1.min.js"></script>
@@ -20,5 +30,6 @@
 <script src="particle.js"></script>
 <script src="rules.js"></script>
 <script src="undo.js"></script>
+<script src="levels/levelids.js"></script>
 <script src="game.js"></script>
 </html>
