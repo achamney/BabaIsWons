@@ -1,16 +1,17 @@
 var wordMasks = {
   "a": ["you", "stop", "push", "win", "open", "shut", "move", "sink",
-    "defeat", "hot", "melt", "swap", "pull", "drop", "shift", "float", "weak"],
+    "defeat", "hot", "melt", "swap", "pull", "drop", "shift", "float", 
+    "weak", "tele"],
   "v": ["is"],
   "h": ["has"],
   "c": ["and"],
   "x": ["not"],
   "n": ["baba", "rock", "wall", "flag", "keke", "water", "skull",
     "lava", "grass", "jelly", "crab", "star", "love", "door", "key", 
-    "text", "bolt", "box"]
+    "text", "bolt", "box", "tree", "ice"]
 };
 var validSequences = {
-    "^(x*n)(cx*n)*v((x*n)|(x*a))((cx*n)|(cx*a))*$": executeIs,
+    "^(x*n)(cx*n)*v((x*n)|(x*a))((cx*n)|(cx*a)|(chn))*$": executeIs,
     "^(x*n)(cx*n)*h(x*n)(cx*n)*$": executeHas
   },
   validStartingChars = ['x', 'n'];
@@ -24,8 +25,13 @@ var runningEqualities = [],
 function executeRules() {
   preExecuteStep();
   removeAllAdjectives(gamestate);
+  var combObjAndWords = gamestate.objects.concat(gamestate.words);
+  for (var obj of combObjAndWords) {
+    delete obj.teled;
+  }
   allSentences = [];
-  var oldRules = copyArray(allSentences);
+  var oldRules = copyArray(allSentences),
+    breakCounter = 0;
   findAllSentences();
   while (sentencesHaveChanged(allSentences, oldRules)) {
     removeAllAdjectives(gamestate);
@@ -42,7 +48,8 @@ function executeRules() {
     }
     for (var i = gamestate.objects.length - 1; i >= 0; i--) {
       var obj = gamestate.objects[i];
-      runAdjectiveStep(obj);
+      if(obj) // TODO: After two deletions, could run into a deleted object
+        runAdjectiveStep(obj);
     }
     for (var i = gamestate.words.length - 1; i >= 0; i--) {
       var obj = gamestate.words[i];
@@ -50,6 +57,10 @@ function executeRules() {
     }
     oldRules = copyArray(allSentences);
     findAllSentences();
+    breakCounter ++;
+    if (breakCounter>50) {
+      break;
+    }
   }
 }
 function findAllSentences() {
@@ -155,12 +166,26 @@ function runAdjectiveStep(obj) {
       move(obj, dir);
     }
   }
+  if (obj.tele) {
+    var objsAtPos = findAtPosition(obj.x, obj.y, obj.z).filter(o => o.id != obj.id);
+    var otherTeles = gamestate.objects.filter(o => o.name == obj.name && o.id != obj.id);
+    for (var teled of objsAtPos) {
+      if (!teled.teled && teled.float == obj.float) {
+        var otherTele = otherTeles[Math.floor(Math.random() * otherTeles.length) ];
+        teled.x = otherTele.x;
+        teled.y = otherTele.y;
+        teled.z = otherTele.z;
+        updateObjPosition(teled, getDirCoordsFromDir(teled));
+        teled.teled = true;
+      }
+    }
+  }
   if (obj.win) {
     var objsAtPos = findAtPosition(obj.x, obj.y, obj.z);
     if (objsAtPos.filter(o => o.you && o.float == obj.float).length > 0) {
       particle(obj, "yellow", 100, 0.3);
       window.setTimeout(function () {
-        window.location = updateURLParameter(window.location.href, "level", gamestate.levelId + 1);
+        window.location = updateURLParameter(window.location.href, "levelid", findLevelByIndex(gamestate.levelId, 1));
       }, 1000);
     }
   }
@@ -237,9 +262,11 @@ function executeIs(actors, dir) {
     rightNouns = {},
     rightAdjs = {},
     rightNNouns = {},
+    rightHas = {},
     rightNAdjs = {},
     isIndex = 0,
-    notted = false;
+    notted = false,
+    has = false;
   for (isIndex = 0; isIndex < actors.length; isIndex++) {
     var curActor = actors[isIndex];
     if (curActor.name == "is") {
@@ -266,19 +293,27 @@ function executeIs(actors, dir) {
     }
     else if (curActor.name == "not") {
       notted = !notted;
+    } else if (curActor.name == "has") {
+      has = true;
     } else if (curActor.name == "and") {
       continue;
     } else {
       if (getCharFromActor(curActor) == "n") {
-        if (notted)
-          rightNNouns[curActor.name] = true;
-        else
-          rightNouns[curActor.name] = true;
+        if (has) {
+          has = false;
+          rightHas[curActor.name] = true;
+        } else {
+          if (notted)
+            rightNNouns[curActor.name] = true;
+          else
+            rightNouns[curActor.name] = true;
+        }
       } else if (getCharFromActor(curActor) == "a") {
         if (notted)
           rightNAdjs[curActor.name] = true;
         else
           rightAdjs[curActor.name] = true;
+          
       }
       notted = false;
     }
@@ -298,6 +333,9 @@ function executeIs(actors, dir) {
     }
     for (var rightNN in rightNNouns) {
       runningNEqualities.push([leftN,"is","not",rightNN]);
+    }
+    for(var rightH in rightHas) {
+      runningHas.push([leftN, "has", rightH]);
     }
   }
   executeBase(actors);

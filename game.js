@@ -22,6 +22,12 @@ window.onload = function () {
   }
   $("#nextlevellink").attr("href",window.location.pathname +"?levelid="+findLevelByIndex(communityLevelId, 1));
   $("#prevlevellink").attr("href",window.location.pathname +"?levelid="+findLevelByIndex(communityLevelId, -1));
+  $(".close").click(function() {$(".modal").hide().css("opacity",0);})
+  $("#worldselect").click(function() {$(".modal").show().css("opacity",1);});
+  $(".ctlleft").click(function () { moveYou({ x: -1, y: 0, z: 0 }); });
+  $(".ctlright").click(function () { moveYou({ x: 1, y: 0, z: 0 }); });
+  $(".ctlup").click(function () { moveYou({ x: 0, y: -1, z: 0 }); });
+  $(".ctldown").click(function () { moveYou({ x: 0, y: 1, z: 0 }); });
   
   $("body").keydown(function (event) {
     if (event.keyCode == 37) {
@@ -51,6 +57,9 @@ window.onload = function () {
       if (obj.win) {
         particle(obj, "yellow", 2, 0.07);
       }
+      if (obj.tele) {
+        particle(obj, "teal", 2, 0.07);
+      }
     }
   }, 700);
 }
@@ -79,11 +88,23 @@ async function loadCommunityLevel(communityLevelId) {
   comgamestate.levelId = communityLevelId;
   setWindowSize();
   drawGameState();
+  if (~window.worlds.thelake.indexOf(communityLevelId)) {
+    $("#gamebody").css("background-color","#002")
+  }
+  else if (~window.worlds.solitaryisland.indexOf(communityLevelId)) {
+    $("#gamebody").css("background-color","#100")
+  }
+  else if (~window.worlds.templeruins.indexOf(communityLevelId)) {
+    $("#gamebody").css("background-color","#010")
+  }
+  else if (~window.worlds.forestoffall.indexOf(communityLevelId)) {
+    $("#gamebody").css("background-color","#110")
+  }
 }
 function setWindowSize() {
   var width = $('#gamebody').width(),
       height = $("#gamebody").height();
-  if (gamestate.size.z > 1) {
+  if (gamestate.size.z > 1 || width < height) {
     $('#gamebody').css("height", width * 18 / (30 * gamestate.size.z));
   } else {
     $('#gamebody').css("width", height * 30 / 18);
@@ -97,12 +118,12 @@ function getDirCoordsFromDir(obj) {
   else return {x:0,y:1,z:0};
 }
 function coordDirToText(dir) {
-  if(dir.x==1) return "r";
-  if(dir.x==-1) return "l";
-  if(dir.y==1) return "d";
-  if(dir.y==-1) return "u";
-  if(dir.z==-1) return "i";
-  if(dir.z==-1) return "o";
+  if(dir.x>0) return "r";
+  if(dir.x<0) return "l";
+  if(dir.y>0) return "d";
+  if(dir.y<0) return "u";
+  if(dir.z<0) return "i";
+  if(dir.z>0) return "o";
 }
 function changeObj(obj, newName) {
   var objdiv = $("#"+obj.id);
@@ -232,7 +253,7 @@ function moveYou(dir) {
     updateRuleUI();
   }
 }
-function move(gameobj,dir) {
+function move(gameobj,dir, cantPull) {
 
   var newPositionObjs = findAtPosition(gameobj.x + dir.x, gameobj.y + dir.y, gameobj.z + dir.z),
       findStopChain = [gameobj];
@@ -272,8 +293,8 @@ function move(gameobj,dir) {
     if (isStop(pushObj) && !pushObj.you && !pushObj.push){
       return false;
     }
-    if (canPush(pushObj) ) {
-      cantMove = cantMove || move(pushObj, dir);
+    if (canPush(pushObj)) {
+      cantMove = cantMove || move(pushObj, dir, true);
     }
   }
   if(cantMove)
@@ -284,7 +305,7 @@ function move(gameobj,dir) {
   gameobj.z += dir.z;
   updateObjPosition(gameobj, dir);
   for(var beh of behindPositionObjs) {
-    if (beh.pull) {
+    if (beh.pull && !cantPull) {
       move(beh, dir);
     }
   }
@@ -317,8 +338,8 @@ function findIsStop(dir, x, y, z, findChain) {
   if(nextObjs.length == 0) return false;
   for (var obj of nextObjs) {
     findChain && findChain.push(obj);
-    if (obj.push || (obj.you && obj.stop)) return findIsStop(dir, x + dir.x, y + dir.y, z + dir.z);
-    if (obj.stop && !obj.you && !obj.shut) return true; // TODO: shut weirdness?
+    if (obj.push || (obj.you && obj.stop)) return findIsStop(dir, x + dir.x, y + dir.y, z + dir.z, findChain);
+    if ((obj.stop || obj.pull) && !obj.you && !(obj.shut && findChain[findChain.length-2].open)) return true; // TODO: shut weirdness?
   }
   return false;
 }
@@ -330,7 +351,7 @@ function isOutside(x,y,z) {
   return false;
 }
 function isStop(obj) {
-  return obj.stop;
+  return obj.stop || obj.pull;
 }
 function canPush(obj) {
   if(obj.push)
@@ -342,10 +363,10 @@ function redoDirections(obj, dir) {
   obj.removeClass("r");
   obj.removeClass("u");
   obj.removeClass("d");
-  if(dir.x == -1) { obj.addClass("l"); }
-  else if (dir.x == 1) { obj.addClass("r"); }
-  else if (dir.y == -1) { obj.addClass("u"); }
-  else if (dir.y == 1) { obj.addClass("d"); }
+  if(dir.x < 0) { obj.addClass("l"); }
+  else if (dir.x > 0) { obj.addClass("r"); }
+  else if (dir.y < 0) { obj.addClass("u"); }
+  else if (dir.y > 0) { obj.addClass("d"); }
 }
 function fontMapping(gridx) {
   return gridx/2.7+"px";

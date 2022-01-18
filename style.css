@@ -102,6 +102,12 @@ body {
 .box {
   background-image: url("img/box.png")
 }
+.tree {
+  background-image: url("img/tree.png")
+}
+.ice {
+  background-image: url("img/ice.png")
+}
 .word.babaword {
   color: pink;
   font-size:3.2vh;
@@ -162,6 +168,12 @@ body {
 .word.boltword {
   color: #FFB;
 }
+.word.treeword {
+  color: #090;
+}
+.word.iceword {
+  color:rgb(42, 144, 202);
+}
 button.selected {
   background-color: #99F;
 }
@@ -187,6 +199,28 @@ button.selected {
   position:absolute;
   outline:1px solid #222;
 }
+#ruleUI {
+  height: 100px;
+  overflow-y: scroll;
+  display: inline-block;
+}
+#mobileControls {
+  display: none;
+}
+@media screen and (max-width: 600px) {
+  
+  #mobileControls {
+    display: inline-block;
+  }
+  #mobileControls span {
+    display: inline-block;
+    width: 40px;
+    height: 40px;
+    border: 1px solid #555;
+    font-size: 30px;
+    margin:5px;
+  }
+}
 .float {
   animation-name: floatAnim;
   animation-duration: 3s;
@@ -207,16 +241,18 @@ button.selected {
 .modal {
   position: absolute;
   transition-property: opacity;
-  transition-duration: 0.3s;
-  transition-delay:0;
-  z-index:1000;
+  transition-duration: 0.5s;
+  transition-delay: 0;
+  z-index: 1000;
   top: 25px;
   left: 25px;
-  width: calc(100% - 50px);
+  width: calc(100% - 80px);
   height: calc(100% - 50px);
   background-color: white;
   box-shadow: 20px 20px 20px 2px black;
   opacity: 0;
+  border: 3px solid #cc0e62;
+  padding-left: 30px;
 }
 .modal span {
   display: inline-block;
@@ -226,10 +262,13 @@ button.selected {
   outline: 2px solid blue;
 }
 .close {
-    color: #aaa;
-    float: right;
+    color: #666;
     font-size: 28px;
     font-weight: bold;
+    position: absolute;
+    right: 5px;
+    top: 5px;
+    font-family: sans-serif;
 }
 
     .close:hover,
