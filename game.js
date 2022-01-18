@@ -28,6 +28,8 @@ window.onload = function () {
   $(".ctlright").click(function () { moveYou({ x: 1, y: 0, z: 0 }); });
   $(".ctlup").click(function () { moveYou({ x: 0, y: -1, z: 0 }); });
   $(".ctldown").click(function () { moveYou({ x: 0, y: 1, z: 0 }); });
+  $(".ctlspace").click(function (){ executeRules(); updateRuleUI();});
+  $(".ctlz").click(function () { undo(); });
   
   $("body").keydown(function (event) {
     if (event.keyCode == 37) {
