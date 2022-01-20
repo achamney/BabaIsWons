@@ -41,7 +41,11 @@ function executeRules() {
     applyChanges();
     applyAdjectives();
     for (var actors of runningHas) {
-      gamestate.objects.filter(o=>o.name == actors[0]).forEach(o=> {
+      var hases = gamestate.objects.filter(o=>o.name == actors[0]);
+      if (actors[0] == "text") {
+        hases = gamestate.words;
+      }
+      hases.forEach(o=> {
         o.has=o.has || [];
         o.has.push(actors[2]);
       });
@@ -114,7 +118,12 @@ function applyChanges() {
   }
   for(var deref of dereferencedChanges) {
     var obj = gamestate.objects.filter(o=>o.id == deref.id)[0];
-    changeObj(obj, deref.name);
+    if (deref.name == "text") {
+      changeToText(obj);
+    }
+    else {
+      changeObj(obj, deref.name);
+    }
   }
   if (dereferencedChanges.length > 0) {
     applyAdjectives();

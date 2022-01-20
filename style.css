@@ -47,11 +47,12 @@ body {
   font-family: sans-serif;
 }
 .baba{
+  background-image: url("img/baba.png"); 
 }
-.baba.r { background-image: url("img/babar.png") }
-.baba.l { background-image: url("img/babal.png") }
-.baba.u { background-image: url("img/babau.png") }
-.baba.d { background-image: url("img/babad.png") }
+.baba.r { background-position-y: 0px; }
+.baba.l { background-position-y: 34%; }
+.baba.u { background-position-y: 69%; }
+.baba.d { background-position-y: 103%; }
 .keke.r { background-image: url("img/keker.png") }
 .keke.l { background-image: url("img/kekel.png") }
 .keke.u { background-image: url("img/kekeu.png") }
@@ -211,14 +212,25 @@ button.selected {
   
   #mobileControls {
     display: inline-block;
+    position:relative;
+    top:100px;
   }
   #mobileControls span {
     display: inline-block;
-    width: 40px;
-    height: 40px;
+    position: absolute;
+    width: 15vw;
+    height: 15vw;
     border: 1px solid #555;
-    font-size: 30px;
+    font-size: 12vw;
     margin:5px;
+  }
+  .ctlup { top: -15vw;left: 15vw; }
+  .ctlright { left: 30vw; }
+  .ctldown { top: 15vw;left: 15vw; }
+  .ctlz { left: 45vw; }
+  .ctlspace { left: 60vw; }
+  #ruleUI {
+    display: block;
   }
 }
 .float {

@@ -16,7 +16,17 @@ $(document).ready(function(){
   $('#objname').keydown(function (event) {
     if(event.keyCode == 13) {
       selectedObj.name = this.value;
+      delete window.timeoutid;
       drawGameState();
+    } else {
+      if (window.timeoutid) {
+        window.clearTimeout(window.timeoutid);
+      }
+      window.timeoutid = window.setTimeout(()=>{
+        delete window.timeoutid;
+        selectedObj.name = $('#objname').val();
+        drawGameState();
+      },500)
     }
   });
   $('#objdir').keydown(function (event) {
@@ -91,6 +101,7 @@ function makeOrModObject(event) {
   }
   drawGameState();
   $("#"+window.selectedObj.id).addClass("selected");
+  window.setTimeout(()=>{$('#objname').focus().select();},0);
 }
 
 function pointToGrid(event) {

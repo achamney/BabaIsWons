@@ -24,12 +24,12 @@ window.onload = function () {
   $("#prevlevellink").attr("href",window.location.pathname +"?levelid="+findLevelByIndex(communityLevelId, -1));
   $(".close").click(function() {$(".modal").hide().css("opacity",0);})
   $("#worldselect").click(function() {$(".modal").show().css("opacity",1);});
-  $(".ctlleft").click(function () { moveYou({ x: -1, y: 0, z: 0 }); });
-  $(".ctlright").click(function () { moveYou({ x: 1, y: 0, z: 0 }); });
-  $(".ctlup").click(function () { moveYou({ x: 0, y: -1, z: 0 }); });
-  $(".ctldown").click(function () { moveYou({ x: 0, y: 1, z: 0 }); });
-  $(".ctlspace").click(function (){ executeRules(); updateRuleUI();});
-  $(".ctlz").click(function () { undo(); });
+  $(".ctlleft")[0].addEventListener('touchstart',function (e) { e.preventDefault(); moveYou({ x: -1, y: 0, z: 0 }); },false);
+  $(".ctlright")[0].addEventListener('touchstart',function (e) { e.preventDefault(); moveYou({ x: 1, y: 0, z: 0 }); },false);
+  $(".ctlup")[0].addEventListener('touchstart',function (e) { e.preventDefault(); moveYou({ x: 0, y: -1, z: 0 }); },false);
+  $(".ctldown")[0].addEventListener('touchstart',function (e) { e.preventDefault(); moveYou({ x: 0, y: 1, z: 0 }); },false);
+  $(".ctlspace")[0].addEventListener('touchstart',function (e){ e.preventDefault(); executeRules(); updateRuleUI();},false);
+  $(".ctlz")[0].addEventListener('touchstart',function (e) { e.preventDefault(); undo(); },false);
   
   $("body").keydown(function (event) {
     if (event.keyCode == 37) {
@@ -133,6 +133,13 @@ function changeObj(obj, newName) {
   objdiv.addClass(newName);
   obj.name = newName;
 }
+function changeToText(obj) {
+  removeObj(obj)
+  var newObj = deepClone(obj);
+  removeAdjectives(newObj);
+  gamestate.words.push(newObj);
+  makeThing($("#gamebody"), newObj, null, null, null, "id"+globalId++, false);
+}
 function removeObj(obj) {
   for (var i=gamestate.objects.length-1;i>=0;i--) {
     if (gamestate.objects[i] == obj) {
@@ -149,10 +156,17 @@ function removeObj(obj) {
     for(var h of obj.has) {
       var newObj = deepClone(obj);
       removeAdjectives(newObj);
-      newObj.name = h;
-      gamestate.objects.push(newObj);
-      obj.dir = obj.dir || "r";
-      makeThing($("#gamebody"), newObj, null, null, null, "id"+globalId++, true);
+      if (h == "text") {
+        gamestate.words.push(newObj);
+        obj.dir = obj.dir || "r";
+        newObj.name = obj.name;
+        makeThing($("#gamebody"), newObj, null, null, null, "id"+globalId++, false);
+      } else {
+        gamestate.objects.push(newObj);
+        obj.dir = obj.dir || "r";
+        newObj.name = h;
+        makeThing($("#gamebody"), newObj, null, null, null, "id"+globalId++, true);
+      }
     }
     applyAdjectives();
   } 
@@ -239,7 +253,7 @@ function makeThing(parent, thing, gridx, gridy, gridz, globalId, isObject) {
   objdiv.gamedata = thing;
 }
 function moveYou(dir) {
-  var yous = gamestate.objects.filter(o => o.you);
+  var yous = gamestate.objects.concat(gamestate.words).filter(o => o.you);
   if (yous.length > 0) {
     undoStack.push(JSON.stringify(gamestate));
     $(".gridline").css("outline","1px solid #111");
@@ -295,7 +309,7 @@ function move(gameobj,dir, cantPull) {
     if (isStop(pushObj) && !pushObj.you && !pushObj.push){
       return false;
     }
-    if (canPush(pushObj)) {
+    if (canPush(pushObj) && !pushObj.you) { // TODO: make a move stack rather than assuming its you that instigated the push action
       cantMove = cantMove || move(pushObj, dir, true);
     }
   }
