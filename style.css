@@ -45,6 +45,7 @@ body {
   font-size:2.0vw;
   font-weight:700;
   font-family: sans-serif;
+  pointer-events: none;
 }
 .baba{
   background-image: url("img/baba.png"); 
@@ -61,8 +62,24 @@ body {
 .bolt.l { background-image: url("img/boltr.png") }
 .bolt.u { background-image: url("img/boltd.png") }
 .bolt.d { background-image: url("img/boltd.png") }
+.belt{
+  background-image: url("img/belt.png"); 
+}
+.belt.r { background-position-y: 0px; }
+.belt.l { background-position-y: 34%; }
+.belt.u { background-position-y: 69%; }
+.belt.d { background-position-y: 100%; }
 .wall {
   background-image: url("img/wall.png")
+}
+.rose {
+  background-image: url("img/rose.png")
+}
+.red {
+  filter: invert(30%) sepia(88%) saturate(7376%) hue-rotate(355deg) brightness(106%) contrast(122%);
+}
+.blue {
+  filter: invert(10%) sepia(100%) saturate(5499%) hue-rotate(246deg) brightness(98%) contrast(150%);
 }
 .rock {
   background-image: url("img/rock.png")
@@ -108,6 +125,9 @@ body {
 }
 .ice {
   background-image: url("img/ice.png")
+}
+.flower {
+  background-image: url("img/flower.png")
 }
 .word.babaword {
   color: pink;
@@ -166,11 +186,23 @@ body {
 .word.notword {
   color: red;
 }
+.word.roseword {
+  color: #B00;
+}
+.word.violetword {
+  color: #55B;
+}
 .word.boltword {
   color: #FFB;
 }
 .word.treeword {
   color: #090;
+}
+.word.beltword {
+  color: #44D;
+}
+.word.flowerword {
+  color: #49D;
 }
 .word.iceword {
   color:rgb(42, 144, 202);
@@ -232,6 +264,10 @@ button.selected {
   #ruleUI {
     display: block;
   }
+
+  .modal span img {
+    width: 20vw;
+  }
 }
 .float {
   animation-name: floatAnim;
@@ -265,6 +301,9 @@ button.selected {
   opacity: 0;
   border: 3px solid #cc0e62;
   padding-left: 30px;
+}
+.modal img {
+  width: 200px;
 }
 .modal span {
   display: inline-block;

@@ -1,14 +1,14 @@
 var wordMasks = {
   "a": ["you", "stop", "push", "win", "open", "shut", "move", "sink",
     "defeat", "hot", "melt", "swap", "pull", "drop", "shift", "float", 
-    "weak", "tele"],
+    "weak", "tele", "red", "blue", "up", "down", "left", "right"],
   "v": ["is"],
   "h": ["has"],
   "c": ["and"],
   "x": ["not"],
   "n": ["baba", "rock", "wall", "flag", "keke", "water", "skull",
     "lava", "grass", "jelly", "crab", "star", "love", "door", "key", 
-    "text", "bolt", "box", "tree", "ice"]
+    "text", "bolt", "box", "tree", "ice", "belt", "rose", "flower"]
 };
 var validSequences = {
     "^(x*n)(cx*n)*v((x*n)|(x*a))((cx*n)|(cx*a)|(chn))*$": executeIs,
@@ -104,7 +104,7 @@ function findAllSentences() {
   }
 }
 function applyChanges() {
-  var dereferencedChanges = [];
+  var dereferencedChanges = {};
   for (var actors of runningEqualities) {
     if (~runningChangeless.indexOf(actors[0]) ||
       runningNEqualities.filter(n=>n[0] == actors[0] && n[3] == actors[2]).length>0) {
@@ -112,20 +112,21 @@ function applyChanges() {
     }
     for (var obj of gamestate.objects) {
       if (actors[0] == obj.name) {
-        dereferencedChanges.push({id:obj.id, name:actors[2]});
+        dereferencedChanges[obj.id] = dereferencedChanges[obj.id] || []; 
+        dereferencedChanges[obj.id].push(actors[2]);
       }
     }
   }
-  for(var deref of dereferencedChanges) {
-    var obj = gamestate.objects.filter(o=>o.id == deref.id)[0];
-    if (deref.name == "text") {
-      changeToText(obj);
-    }
-    else {
-      changeObj(obj, deref.name);
+  var rerunAdjs = false;
+  for(var derefId in dereferencedChanges) {
+    rerunAdjs = true;
+    var obj = gamestate.objects.filter(o=>o.id == derefId)[0];
+    removeObj(obj);
+    for (var derefName of dereferencedChanges[derefId]) {
+      makeNewObjectFromOld(obj, derefName, derefName == "text");
     }
   }
-  if (dereferencedChanges.length > 0) {
+  if (rerunAdjs) {
     applyAdjectives();
   }
 }
@@ -137,6 +138,10 @@ function runAdjectiveStep(obj) {
       removeObj(objsAtPos[0]);
     }
   }
+  if (obj.up) { obj.dir="u";updateObjPosition(obj, getDirCoordsFromDir(obj));}
+  if (obj.down) { obj.dir="d";updateObjPosition(obj, getDirCoordsFromDir(obj));}
+  if (obj.left) { obj.dir="l";updateObjPosition(obj, getDirCoordsFromDir(obj));}
+  if (obj.right) { obj.dir="r";updateObjPosition(obj, getDirCoordsFromDir(obj));}
   if (obj.sink) {
     var objsAtPos = findAtPosition(obj.x, obj.y, obj.z);
     for (var sinking of objsAtPos) {
@@ -145,21 +150,22 @@ function runAdjectiveStep(obj) {
       removeObj(sinking);
     }
   }
+  if (obj.weak) {
+    var objsAtPos = findAtPosition(obj.x, obj.y, obj.z).filter(o=>o.id != obj.id);
+    if (objsAtPos.length > 0) {
+      removeObj(obj);
+      for (var other of objsAtPos) {
+        if (other.weak) {
+          removeObj(other); 
+        }
+      }
+    }
+  }
   if (obj.defeat) {
     var objsAtPos = findAtPosition(obj.x, obj.y, obj.z);
     for (var defeated of objsAtPos) {
       if (defeated.you && obj.float == defeated.float)
         removeObj(defeated);
-    }
-  }
-  if (obj.weak) {
-    var objsAtPos = findAtPosition(obj.x, obj.y, obj.z);
-    if (objsAtPos.length > 0) {
-      if (objsAtPos.length == 1 && objsAtPos[0] == obj) {
-
-      } else {
-        removeObj(obj);
-      }
     }
   }
   if (obj.hot) {
@@ -200,17 +206,21 @@ function runAdjectiveStep(obj) {
   }
 }
 function preExecuteStep() {
+  var shifts = [];
   for (var obj of gamestate.objects) {
     if (obj.shift) {
       var objsAtPos = findAtPosition(obj.x, obj.y, obj.z);
       for (var shifted of objsAtPos) {
         if (shifted != obj)
-          move(shifted, getDirCoordsFromDir(obj));
+         shifts.push([shifted, getDirCoordsFromDir(obj)]);
       }
     }
     if (obj.move) {
       move(obj, getDirCoordsFromDir(obj));
     }
+  }
+  for (var shift of shifts) {
+    move(shift[0], shift[1]);
   }
 }
 function applyAdjectives(){

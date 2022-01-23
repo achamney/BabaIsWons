@@ -73,6 +73,32 @@ function findLevelByIndex(levelid, adder) {
   }
   return joinedLevels[joinedLevels.indexOf(levelid) + adder];
 }
+async function tmp() {
+  var worlds = window.worlds;
+  var joinedLevels = [];
+  for (var worldname in worlds) {
+    joinedLevels = joinedLevels.concat(worlds[worldname]);
+  }
+
+  var backup = [];
+  for (var lvl of joinedLevels) {
+    var ret = await netService.getGameState(lvl);
+    backup.push(ret);
+
+  }
+  var file = new Blob(["window.leveldata="+JSON.stringify(backup)], {type: "text"});
+    
+  var a = document.createElement("a"),
+          url = URL.createObjectURL(file);
+  a.href = url;
+  a.download = "levelbackup.js";
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function() {
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);  
+  }, 0); 
+}
 function loadPremadeLevel(levelnum) {
   var levelTag = document.createElement("script");
   levelTag.type="text/javascript";
@@ -101,6 +127,9 @@ async function loadCommunityLevel(communityLevelId) {
   }
   else if (~window.worlds.forestoffall.indexOf(communityLevelId)) {
     $("#gamebody").css("background-color","#110")
+  }
+  else if (~window.worlds.deepforest.indexOf(communityLevelId)) {
+    $("#gamebody").css("background-color","#010")
   }
 }
 function setWindowSize() {
@@ -154,23 +183,22 @@ function removeObj(obj) {
   $("#"+obj.id).remove();
   if(obj.has) {
     for(var h of obj.has) {
-      var newObj = deepClone(obj);
-      removeAdjectives(newObj);
-      if (h == "text") {
-        gamestate.words.push(newObj);
-        obj.dir = obj.dir || "r";
-        newObj.name = obj.name;
-        makeThing($("#gamebody"), newObj, null, null, null, "id"+globalId++, false);
-      } else {
-        gamestate.objects.push(newObj);
-        obj.dir = obj.dir || "r";
-        newObj.name = h;
-        makeThing($("#gamebody"), newObj, null, null, null, "id"+globalId++, true);
-      }
+      makeNewObjectFromOld(obj, h, h == "text");
     }
     applyAdjectives();
   } 
   particle(obj, "#733", 10, 0.1);
+}
+function makeNewObjectFromOld(oldObj, newName, isWord) {
+  var newObj = deepClone(oldObj);
+  removeAdjectives(newObj);
+  if (isWord) {
+    gamestate.words.push(newObj);
+  } else {
+    gamestate.objects.push(newObj);
+  }
+  newObj.name = newName;
+  makeThing($("#gamebody"), newObj, null, null, null, "id"+globalId++, !isWord);
 }
 function makeGameState(level) {
     if (window.leveldata) {
@@ -298,6 +326,10 @@ function move(gameobj,dir, cantPull) {
       var find = findStopChain[i];
       if (find.weak) {
         removeObj(find);
+        var other = findStopChain[i+1];
+        if (other.weak) {
+          removeObj(other);
+        }
       }
     }
     return false;
@@ -311,6 +343,12 @@ function move(gameobj,dir, cantPull) {
     }
     if (canPush(pushObj) && !pushObj.you) { // TODO: make a move stack rather than assuming its you that instigated the push action
       cantMove = cantMove || move(pushObj, dir, true);
+    }
+    if (pushObj.swap) {
+      pushObj.x = gameobj.x;
+      pushObj.y = gameobj.y;
+      pushObj.z = gameobj.z;
+      updateObjPosition(pushObj, getDirCoordsFromDir(pushObj));
     }
   }
   if(cantMove)
