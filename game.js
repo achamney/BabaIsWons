@@ -281,9 +281,22 @@ function makeThing(parent, thing, gridx, gridy, gridz, globalId, isObject) {
   objdiv.gamedata = thing;
 }
 function moveYou(dir) {
-  var yous = gamestate.objects.concat(gamestate.words).filter(o => o.you);
+  var concatStuff = gamestate.objects.concat(gamestate.words);
+  var yous = concatStuff.filter(o => o.you);
+  undoStack.push(JSON.stringify(gamestate));
+
+  if(gamestate.empty.you) {
+    var pushes = concatStuff.filter(c=>c.push);
+    for (var p of pushes){
+      var findEmpty = findAtPosition(p.x - dir.x, p.y - dir.y, p.z - dir.z);
+      if (findEmpty.length == 0) {
+        move(p, dir);
+      }
+    }
+    executeRules();
+    updateRuleUI();
+  }
   if (yous.length > 0) {
-    undoStack.push(JSON.stringify(gamestate));
     $(".gridline").css("outline","1px solid #111");
     for(var obj of yous) {
       particle(obj, "white", 1, 0.01);
@@ -336,6 +349,9 @@ function move(gameobj,dir, cantPull) {
   }
 
   newPositionObjs = findAtPosition(gameobj.x + dir.x, gameobj.y + dir.y, gameobj.z + dir.z);
+  if (gamestate.empty.push && newPositionObjs.length == 0) {
+    newPositionObjs.push({ x: gameobj.x + dir.x, y: gameobj.y + dir.y, z: gameobj.z + dir.z, push: true });
+  }
   var cantMove = false;
   for(var pushObj of newPositionObjs) {
     if (isStop(pushObj) && !pushObj.you && !pushObj.push){
@@ -354,15 +370,39 @@ function move(gameobj,dir, cantPull) {
   if(cantMove)
     return false;
   var behindPositionObjs = findAtPosition(gameobj.x - dir.x, gameobj.y - dir.y, gameobj.z - dir.z);
+  if (gamestate.empty.pull && behindPositionObjs.length == 0) {
+    behindPositionObjs.push({ x: gameobj.x - dir.x, y: gameobj.y - dir.y, z: gameobj.z - dir.z, pull: true });
+  }
   gameobj.x += dir.x;
   gameobj.y += dir.y;
   gameobj.z += dir.z;
   updateObjPosition(gameobj, dir);
-  for(var beh of behindPositionObjs) {
-    if (beh.pull && !cantPull) {
-      move(beh, dir);
+  if (gamestate.empty.open && newPositionObjs.length == 0 && gameobj.shut) {
+    removeObj(gameobj);
+    gamestate.empty.has && gamestate.empty.has.forEach(h=>{
+      makeNewObjectFromOld(gameobj, h, h == "text");
+    }) 
+  }
+  !cantPull && pullChain(behindPositionObjs, dir);
+}
+function pullChain(list, dir) {
+  var behindPositionObjs = [];
+  for(var beh of list) {
+    if (beh.pull) {
+      if(isOutside(beh.x, beh.y, beh.z)) {
+        return;
+      }
+      behindPositionObjs = findAtPosition(beh.x - dir.x, beh.y - dir.y, beh.z - dir.z);
+      if (gamestate.empty.pull && behindPositionObjs.length == 0) {
+        behindPositionObjs.push({ x: beh.x - dir.x, y: beh.y - dir.y, z: beh.z - dir.z, pull: true });
+      }
+      beh.x += dir.x;
+      beh.y += dir.y;
+      beh.z += dir.z;
+      updateObjPosition(beh, dir);
     }
   }
+  behindPositionObjs.length > 0 && pullChain(behindPositionObjs, dir);
 }
 function reverseDir(obj) {
   if (obj.dir == "r") obj.dir = "l";
@@ -389,6 +429,12 @@ function findIsStop(dir, x, y, z, findChain) {
     return true;
   }
   var nextObjs = findAtPosition(x + dir.x, y + dir.y, z + dir.z);
+  if (gamestate.empty.push && nextObjs.length == 0) {
+    nextObjs.push({ x: x + dir.x, y: y + dir.y, z: z + dir.z, push: true });
+  }
+  if (gamestate.empty.pull && nextObjs.length == 0) {
+    return true;
+  }
   if(nextObjs.length == 0) return false;
   for (var obj of nextObjs) {
     findChain && findChain.push(obj);

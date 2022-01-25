@@ -1,14 +1,15 @@
 var wordMasks = {
   "a": ["you", "stop", "push", "win", "open", "shut", "move", "sink",
     "defeat", "hot", "melt", "swap", "pull", "drop", "shift", "float", 
-    "weak", "tele", "red", "blue", "up", "down", "left", "right"],
+    "weak", "tele", "red", "blue", "up", "down", "left", "right", "fall"],
   "v": ["is"],
   "h": ["has"],
   "c": ["and"],
   "x": ["not"],
   "n": ["baba", "rock", "wall", "flag", "keke", "water", "skull",
     "lava", "grass", "jelly", "crab", "star", "love", "door", "key", 
-    "text", "bolt", "box", "tree", "ice", "belt", "rose", "flower"]
+    "text", "bolt", "box", "tree", "ice", "belt", "rose", "flower",
+    "empty"]
 };
 var validSequences = {
     "^(x*n)(cx*n)*v((x*n)|(x*a))((cx*n)|(cx*a)|(chn))*$": executeIs,
@@ -49,6 +50,10 @@ function executeRules() {
         o.has=o.has || [];
         o.has.push(actors[2]);
       });
+      if (actors[0] == "empty") {
+        gamestate.empty.has = gamestate.empty.has || [];
+        gamestate.empty.has.push(actors[2]);
+      }
     }
     for (var i = gamestate.objects.length - 1; i >= 0; i--) {
       var obj = gamestate.objects[i];
@@ -110,20 +115,44 @@ function applyChanges() {
       runningNEqualities.filter(n=>n[0] == actors[0] && n[3] == actors[2]).length>0) {
       continue;
     }
-    for (var obj of gamestate.objects) {
-      if (actors[0] == obj.name) {
-        dereferencedChanges[obj.id] = dereferencedChanges[obj.id] || []; 
-        dereferencedChanges[obj.id].push(actors[2]);
+    if (actors[0] == "empty") {
+      for (var x = 0; x < gamestate.size.x; x ++) {
+        for (var y = 0; y < gamestate.size.y; y ++) {
+          for (var z = 0; z < gamestate.size.z; z ++) {
+            var locKey = JSON.stringify({ x: x, y: y, z: z });
+            var others = findAtPosition(x, y, z);
+            if (others.length == 0) {
+              dereferencedChanges[locKey] = dereferencedChanges[locKey] || []; 
+              dereferencedChanges[locKey].push(actors[2]);
+            }
+          }
+        } 
+      }
+    } else {
+      for (var obj of gamestate.objects) {
+        if (actors[0] == obj.name) {
+          dereferencedChanges[obj.id] = dereferencedChanges[obj.id] || []; 
+          dereferencedChanges[obj.id].push(actors[2]);
+        }
       }
     }
   }
   var rerunAdjs = false;
   for(var derefId in dereferencedChanges) {
     rerunAdjs = true;
-    var obj = gamestate.objects.filter(o=>o.id == derefId)[0];
-    removeObj(obj);
-    for (var derefName of dereferencedChanges[derefId]) {
-      makeNewObjectFromOld(obj, derefName, derefName == "text");
+    if (derefId.startsWith("{")) {
+      var locKey = JSON.parse(derefId);
+      for (var derefName of dereferencedChanges[derefId]) {
+        if (derefName != "empty")
+          makeNewObjectFromOld(locKey, derefName, derefName == "text");
+      }
+    } else {
+      var obj = gamestate.objects.filter(o=>o.id == derefId)[0];
+      removeObj(obj);
+      for (var derefName of dereferencedChanges[derefId]) {
+        if (derefName != "empty")
+          makeNewObjectFromOld(obj, derefName, derefName == "text");
+      }
     }
   }
   if (rerunAdjs) {
@@ -159,6 +188,7 @@ function runAdjectiveStep(obj) {
           removeObj(other); 
         }
       }
+      return;
     }
   }
   if (obj.defeat) {
@@ -179,6 +209,14 @@ function runAdjectiveStep(obj) {
     var dir = {x:0,y:0,z:-1};
     while(!findIsStop(dir, obj.x, obj.y, obj.z)) {
       move(obj, dir);
+    }
+  }
+  if (obj.fall) {
+    var newPositionObjs = findAtPosition(obj.x, obj.y + 1, obj.z).filter(o=>o.push || o.stop);
+    while(newPositionObjs.length == 0 &&  !isOutside(obj.x, obj.y+1, obj.z)) {
+      obj.y += 1;
+      updateObjPosition(obj, getDirCoordsFromDir(obj));
+      newPositionObjs = findAtPosition(obj.x, obj.y + 1, obj.z).filter(o=>o.push || o.stop);
     }
   }
   if (obj.tele) {
@@ -211,7 +249,7 @@ function preExecuteStep() {
     if (obj.shift) {
       var objsAtPos = findAtPosition(obj.x, obj.y, obj.z);
       for (var shifted of objsAtPos) {
-        if (shifted != obj)
+        if (shifted != obj && shifted.float == obj.float)
          shifts.push([shifted, getDirCoordsFromDir(obj)]);
       }
     }
@@ -378,6 +416,9 @@ function executeAdjectiveImpl(actors) {
     noun[actors[2]] = true;
     $("#"+noun.id).addClass(actors[2]);
   }
+  if (actors[0]=="empty") {
+    gamestate.empty[actors[2]] = true;
+  }
 }
 function executeHas(actors, dir) {
   var leftNouns = {},
@@ -436,6 +477,7 @@ function removeAllAdjectives(gs, dontRemoveTextClasses) {
     if (!dontRemoveTextClasses)
       $("#"+word.id).removeClass("active");
   }
+  gamestate.empty = {};
 }
 function removeAdjectives(obj) {
   var objdom = $("#"+obj.id);
