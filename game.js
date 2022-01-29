@@ -28,7 +28,7 @@ window.onload = function () {
   $(".ctlright")[0].addEventListener('touchstart',function (e) { e.preventDefault(); moveYou({ x: 1, y: 0, z: 0 }); },false);
   $(".ctlup")[0].addEventListener('touchstart',function (e) { e.preventDefault(); moveYou({ x: 0, y: -1, z: 0 }); },false);
   $(".ctldown")[0].addEventListener('touchstart',function (e) { e.preventDefault(); moveYou({ x: 0, y: 1, z: 0 }); },false);
-  $(".ctlspace")[0].addEventListener('touchstart',function (e){ e.preventDefault(); executeRules(); updateRuleUI();},false);
+  $(".ctlspace")[0].addEventListener('touchstart',function (e){ e.preventDefault(); gamewait(); },false);
   $(".ctlz")[0].addEventListener('touchstart',function (e) { e.preventDefault(); undo(); },false);
   
   $("body").keydown(function (event) {
@@ -48,8 +48,7 @@ window.onload = function () {
     } else if (event.keyCode == 83) {
       moveYou({ x: 0, y: 0, z: -1 });
     } else if (event.keyCode == 32) {
-      executeRules();
-      updateRuleUI();
+      gamewait();
     } else if (event.keyCode == 90) {
       undo();
     }
@@ -64,6 +63,12 @@ window.onload = function () {
       }
     }
   }, 700);
+}
+function gamewait() {
+  window.movesToExecute = []; 
+  executeRules(); 
+  runDeferredMoves();
+  updateRuleUI();
 }
 function findLevelByIndex(levelid, adder) {
   var worlds = window.worlds;
@@ -114,6 +119,7 @@ async function loadCommunityLevel(communityLevelId) {
   var comgamestate = await netService.getGameState(communityLevelId);
   window.gamestate = comgamestate;
   comgamestate.levelId = communityLevelId;
+  initGameState(comgamestate);
   setWindowSize();
   drawGameState();
   if (~window.worlds.thelake.indexOf(communityLevelId)) {
@@ -205,7 +211,7 @@ function makeGameState(level) {
       gamestate = window.leveldata;
     } 
     gamestate.levelId=level;
-    gamestate.size.z = gamestate.size.z || 1;
+    initGameState(gamestate);
 }
 function findAtPosition(i, j, k, excludeObjects) {
   var ret = [];
@@ -253,6 +259,7 @@ function drawGameState() {
     makeThing(main, obj, gridx, gridy, gridz, "id"+globalId++, false);
   }
   executeRules();
+  runDeferredMoves();
 }
 function makeThing(parent, thing, gridx, gridy, gridz, globalId, isObject) {
   if (!gridx) {
@@ -280,11 +287,17 @@ function makeThing(parent, thing, gridx, gridy, gridz, globalId, isObject) {
   }
   objdiv.gamedata = thing;
 }
+function runDeferredMoves(){
+  for (var moveEx of movesToExecute) {
+    moveImpl(moveEx.obj, moveEx.dir);
+  }
+  window.movesToExecute = [];
+}
 function moveYou(dir) {
   var concatStuff = gamestate.objects.concat(gamestate.words);
   var yous = concatStuff.filter(o => o.you);
   undoStack.push(JSON.stringify(gamestate));
-
+  window.movesToExecute = [];
   if(gamestate.empty.you) {
     var pushes = concatStuff.filter(c=>c.push);
     for (var p of pushes){
@@ -293,7 +306,9 @@ function moveYou(dir) {
         move(p, dir);
       }
     }
+    runDeferredMoves();
     executeRules();
+    runDeferredMoves();
     updateRuleUI();
   }
   if (yous.length > 0) {
@@ -306,7 +321,9 @@ function moveYou(dir) {
         $(".gridline.gridy"+obj.y).css("outline","1px solid #522");
       }
     }
+    runDeferredMoves();
     executeRules();
+    runDeferredMoves();
     updateRuleUI();
   }
 }
@@ -373,10 +390,7 @@ function move(gameobj,dir, cantPull) {
   if (gamestate.empty.pull && behindPositionObjs.length == 0) {
     behindPositionObjs.push({ x: gameobj.x - dir.x, y: gameobj.y - dir.y, z: gameobj.z - dir.z, pull: true });
   }
-  gameobj.x += dir.x;
-  gameobj.y += dir.y;
-  gameobj.z += dir.z;
-  updateObjPosition(gameobj, dir);
+  window.movesToExecute.push({obj: gameobj, dir: dir});
   if (gamestate.empty.open && newPositionObjs.length == 0 && gameobj.shut) {
     removeObj(gameobj);
     gamestate.empty.has && gamestate.empty.has.forEach(h=>{
@@ -384,6 +398,12 @@ function move(gameobj,dir, cantPull) {
     }) 
   }
   !cantPull && pullChain(behindPositionObjs, dir);
+}
+function moveImpl(obj, dir) { 
+  obj.x += dir.x;
+  obj.y += dir.y;
+  obj.z += dir.z;
+  updateObjPosition(obj, dir);
 }
 function pullChain(list, dir) {
   var behindPositionObjs = [];
@@ -492,4 +512,8 @@ function updateRuleUI() {
   for (var rule of simple) {
     make("span", body).innerHTML = rule + "<br/>";
   }
+}
+function initGameState() {
+  gamestate.empty = {};
+  gamestate.size.z = gamestate.size.z || 1;
 }
