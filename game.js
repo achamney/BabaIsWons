@@ -6,6 +6,7 @@ var gamestate = {
     size: {x: 24, y: 18, z: 1}
 },globalId = 1;
 window.selectedObj = {};
+window.movesToExecute = []; 
 window.onload = function () {
 
   var urlParams = new URLSearchParams(window.location.search);
@@ -67,7 +68,6 @@ window.onload = function () {
 function gamewait() {
   window.movesToExecute = []; 
   executeRules(); 
-  runDeferredMoves();
   updateRuleUI();
 }
 function findLevelByIndex(levelid, adder) {

@@ -260,6 +260,13 @@ function runAdjectiveStep(obj) {
   }
 }
 function preExecuteStep() {
+  for (var obj of gamestate.objects) {
+    if (obj.move) {
+      move(obj, getDirCoordsFromDir(obj));
+    }
+  }
+  runDeferredMoves();
+
   var shifts = [];
   for (var obj of gamestate.objects) {
     if (obj.shift) {
@@ -269,13 +276,11 @@ function preExecuteStep() {
          shifts.push([shifted, getDirCoordsFromDir(obj)]);
       }
     }
-    if (obj.move) {
-      move(obj, getDirCoordsFromDir(obj));
-    }
   }
   for (var shift of shifts) {
     move(shift[0], shift[1]);
   }
+  runDeferredMoves();
 }
 function applyAdjectives(){
   for (var actors of runningAdjectives) {
