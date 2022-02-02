@@ -202,8 +202,8 @@ function makeNewObjectFromOld(oldObj, newName, isWord) {
     gamestate.words.push(newObj);
   } else {
     gamestate.objects.push(newObj);
+    newObj.name = newName;
   }
-  newObj.name = newName;
   makeThing($("#gamebody"), newObj, null, null, null, "id"+globalId++, !isWord);
 }
 function makeGameState(level) {
@@ -213,7 +213,7 @@ function makeGameState(level) {
     gamestate.levelId=level;
     initGameState(gamestate);
 }
-function findAtPosition(i, j, k, excludeObjects) {
+function findAtPosition(i, j, k, excludeObjects, excludeText) {
   var ret = [];
   if (!excludeObjects) {
     for(var obj of gamestate.objects) {
@@ -221,9 +221,11 @@ function findAtPosition(i, j, k, excludeObjects) {
         ret.push(obj);
     }
   }
-  for(var obj of gamestate.words) {
-    if (obj.x == i && obj.y == j && obj.z == k)
-      ret.push(obj);
+  if(!excludeText) {
+    for(var obj of gamestate.words) {
+      if (obj.x == i && obj.y == j && obj.z == k)
+        ret.push(obj);
+    }
   }
   return ret;
 }

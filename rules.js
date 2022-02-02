@@ -125,13 +125,14 @@ function findAllSentences() {
   }
 }
 function applyChanges() {
+  var allThings = gamestate.objects.concat(gamestate.words);
   var dereferencedChanges = {};
   for (var actors of runningEqualities) {
     if (~runningChangeless.indexOf(actors[0].name) ||
       runningNEqualities.filter(n=>n[0].name == actors[0].name && n[3] == actors[2]).length>0) {
       continue;
     }
-    if (actors[0] == "empty") {bnn
+    if (actors[0] == "empty") {
       for (var x = 0; x < gamestate.size.x; x ++) {
         for (var y = 0; y < gamestate.size.y; y ++) {
           for (var z = 0; z < gamestate.size.z; z ++) {
@@ -145,7 +146,10 @@ function applyChanges() {
         } 
       }
     } else {
-      var filteredObjs = gamestate.objects.filter(o=>o.name == actors[0].name);
+      var filteredObjs = gamestate.objects.filter(o=>o.name == actors[0].name);// allThings?
+      if (actors[0].name == "text") {
+        filteredObjs = gamestate.words;
+      }
       filteredObjs = filterByCondition(actors, filteredObjs);
       for (var obj of filteredObjs) {
         dereferencedChanges[obj.id] = dereferencedChanges[obj.id] || []; 
@@ -163,7 +167,7 @@ function applyChanges() {
           makeNewObjectFromOld(locKey, derefName, derefName == "text");
       }
     } else {
-      var obj = gamestate.objects.filter(o=>o.id == derefId)[0];
+      var obj = allThings.filter(o=>o.id == derefId)[0];
       removeObj(obj);
       for (var derefName of dereferencedChanges[derefId]) {
         if (derefName != "empty")
@@ -301,14 +305,14 @@ function checkIsLockAndKey(obj1, objs2) {
   }
 }
 function executeRuleDir(matchingWord, ruleName, dir) {
-  var actors = [matchingWord],
+  var actors = [findAtPosition(matchingWord.x, matchingWord.y, matchingWord.z, true)],
       abvSentence = getCharFromActor(matchingWord),
       lastValidActors = [],
       lastActor = matchingWord,
       regexp = new RegExp(ruleName),
       nextWord = findAtPosition(lastActor.x + dir.x, lastActor.y + dir.y, lastActor.z + dir.z, true);
   while (nextWord.length > 0) {
-    actors.push(nextWord[0]); // TODO: multiple words on the same spot
+    actors.push(nextWord);
     lastActor = nextWord[0];
     abvSentence += getCharFromActor(lastActor);
     if (regexp.test(abvSentence)) {
@@ -316,8 +320,29 @@ function executeRuleDir(matchingWord, ruleName, dir) {
     }
     nextWord = findAtPosition(lastActor.x + dir.x, lastActor.y + dir.y, lastActor.z + dir.z, true);
   }
-  if (lastValidActors.length > 0)
-    validSequences[ruleName](lastValidActors, dir);
+  if (lastValidActors.length > 0) {
+    var curInds = lastValidActors.map(() => 0);
+    var total = lastValidActors.map(a => a.length).reduce((a, b) => a * b); // TODO: this doesn't work for more than one multiple
+    for (var i = 0; i < total; i++) {
+      var multiplex = [];
+      for (var actorInd in lastValidActors) {
+        var actor = lastValidActors[actorInd],
+            actorMultiplexed = actor[curInds[actorInd]];
+
+        actorMultiplexed.used = actorMultiplexed.used || { r: false, d: false, i: false };
+
+        if (actorMultiplexed.used[coordDirToText(dir)] && i==0) {
+          return;
+        }
+        actorMultiplexed.used[coordDirToText(dir)] = true;
+        multiplex.push(actor[curInds[actorInd]]);
+        if (curInds[actorInd] + 1 < actor.length) {
+          curInds[actorInd] += 1;
+        }
+      }
+      validSequences[ruleName](multiplex, dir);
+    }
+  }
 }
 function getCharFromActor(actor) {
   for (var c in wordMasks) {
@@ -348,11 +373,6 @@ function executeIs(actors, dir) {
   for (isIndex = 0; isIndex < actors.length; isIndex++) {
     var curActor = actors[isIndex];
     if (curActor.name == "is") {
-      curActor.used = curActor.used || {r:false, d: false, i:false }
-      if (curActor.used[coordDirToText(dir)]) {
-        return;
-      }
-      curActor.used[coordDirToText(dir)] = true;
       break;
     }
     else if (curActor.name == "on") {
@@ -457,7 +477,7 @@ function filterByCondition(actors, nouns) {
         if (~actors[0].condition.on.indexOf("text")) {
           others = findAtPosition(n.x, n.y, n.z, true)
         } else {
-          others = findAtPosition(n.x, n.y, n.z).filter(o=>o!=n && ~actors[0].condition.on.indexOf(o.name));
+          others = findAtPosition(n.x, n.y, n.z, false, true).filter(o=>o!=n && ~actors[0].condition.on.indexOf(o.name));
         }
         return others.length > 0;
       });
