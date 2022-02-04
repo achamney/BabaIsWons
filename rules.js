@@ -256,10 +256,7 @@ function runAdjectiveStep(obj) {
   if (obj.win) {
     var objsAtPos = findAtPosition(obj.x, obj.y, obj.z);
     if (objsAtPos.filter(o => o.you && o.float == obj.float).length > 0) {
-      particle(obj, "yellow", 100, 0.3);
-      window.setTimeout(function () {
-        window.location = updateURLParameter(window.location.href, "levelid", findLevelByIndex(gamestate.levelId, 1));
-      }, 1000);
+      triggerWin(obj);
     }
   }
 }
@@ -493,11 +490,6 @@ function executeHas(actors, dir) {
   for (hasIndex = 0; hasIndex < actors.length; hasIndex++) {
     var curActor = actors[hasIndex];
     if (curActor.name == "has") {
-      curActor.used = curActor.used || {r:false, d: false, i:false }
-      if (curActor.used[coordDirToText(dir)]) {
-        return;
-      }
-      curActor.used[coordDirToText(dir)] = true;
       break;
     }
     else if (curActor.name == "not") {
@@ -540,11 +532,6 @@ function executeMake(actors, dir) {
   for (makeIndex = 0; makeIndex < actors.length; makeIndex++) {
     var curActor = actors[makeIndex];
     if (curActor.name == "make") {
-      curActor.used = curActor.used || {r:false, d: false, i:false }
-      if (curActor.used[coordDirToText(dir)]) {
-        return;
-      }
-      curActor.used[coordDirToText(dir)] = true;
       break;
     }
     else if (curActor.name == "not") {

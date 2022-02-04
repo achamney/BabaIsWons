@@ -33,26 +33,7 @@ window.onload = function () {
   $(".ctlz")[0].addEventListener('touchstart',function (e) { e.preventDefault(); undo(); },false);
   
   $("body").keydown(function (event) {
-    if (event.keyCode == 37) {
-      moveYou({ x: -1, y: 0, z: 0 });
-    }
-    else if (event.keyCode == 39) {
-      moveYou({ x: 1, y: 0, z: 0 });
-    }
-    else if (event.keyCode == 38) {
-      moveYou({ x: 0, y: -1, z: 0 });
-    }
-    else if (event.keyCode == 40) {
-      moveYou({ x: 0, y: 1, z: 0 });
-    } else if (event.keyCode == 87) {
-      moveYou({ x: 0, y: 0, z: 1 });
-    } else if (event.keyCode == 83) {
-      moveYou({ x: 0, y: 0, z: -1 });
-    } else if (event.keyCode == 32) {
-      gamewait();
-    } else if (event.keyCode == 90) {
-      undo();
-    }
+    pressKey(event);
   });
   window.setInterval(function () {
     for (var obj of gamestate.objects) {
@@ -65,10 +46,43 @@ window.onload = function () {
     }
   }, 700);
 }
+window.pressKey = function(event) {
+  gamestate.solution.push(event.keyCode);
+  if (event.keyCode == 37) {
+    moveYou({ x: -1, y: 0, z: 0 });
+  }
+  else if (event.keyCode == 39) {
+    moveYou({ x: 1, y: 0, z: 0 });
+  }
+  else if (event.keyCode == 38) {
+    moveYou({ x: 0, y: -1, z: 0 });
+  }
+  else if (event.keyCode == 40) {
+    moveYou({ x: 0, y: 1, z: 0 });
+  } else if (event.keyCode == 87) {
+    moveYou({ x: 0, y: 0, z: 1 });
+  } else if (event.keyCode == 83) {
+    moveYou({ x: 0, y: 0, z: -1 });
+  } else if (event.keyCode == 32) {
+    gamewait();
+  } else if (event.keyCode == 90) {
+    undo();
+  }
+}
 function gamewait() {
   window.movesToExecute = []; 
   executeRules(); 
   updateRuleUI();
+}
+async function triggerWin(obj) {
+  var solution = clone(gamestate.solution);
+  particle(obj, "yellow", 100, 0.3);
+  var origGameState = await netService.getGameState(gamestate.levelId);
+  origGameState.solution = solution;
+  await netService.setGameState(origGameState, gamestate.levelId);
+  window.setTimeout(function () {
+    window.location = updateURLParameter(window.location.href, "levelid", findLevelByIndex(gamestate.levelId, 1));
+  }, 1000);
 }
 function findLevelByIndex(levelid, adder) {
   var worlds = window.worlds;
@@ -291,7 +305,11 @@ function makeThing(parent, thing, gridx, gridy, gridz, globalId, isObject) {
 }
 function runDeferredMoves(){
   for (var moveEx of movesToExecute) {
-    moveImpl(moveEx.obj, moveEx.dir);
+
+    moveEx.obj.x = moveEx.pos.x + moveEx.dir.x;
+    moveEx.obj.y = moveEx.pos.y + moveEx.dir.y;
+    moveEx.obj.z = moveEx.pos.z + moveEx.dir.z;
+    updateObjPosition(moveEx.obj, moveEx.dir);
   }
   window.movesToExecute = [];
 }
@@ -359,7 +377,7 @@ function move(gameobj,dir, cantPull) {
       if (find.weak) {
         removeObj(find);
         var other = findStopChain[i+1];
-        if (other.weak) {
+        if (other && other.weak) {
           removeObj(other);
         }
       }
@@ -392,7 +410,7 @@ function move(gameobj,dir, cantPull) {
   if (gamestate.empty.pull && behindPositionObjs.length == 0) {
     behindPositionObjs.push({ x: gameobj.x - dir.x, y: gameobj.y - dir.y, z: gameobj.z - dir.z, pull: true });
   }
-  window.movesToExecute.push({obj: gameobj, dir: dir});
+  window.movesToExecute.push({obj: gameobj, dir: dir, pos: deepClone(gameobj)});
   if (gamestate.empty.open && newPositionObjs.length == 0 && gameobj.shut) {
     removeObj(gameobj);
     gamestate.empty.has && gamestate.empty.has.forEach(h=>{
@@ -400,12 +418,6 @@ function move(gameobj,dir, cantPull) {
     }) 
   }
   !cantPull && pullChain(behindPositionObjs, dir);
-}
-function moveImpl(obj, dir) { 
-  obj.x += dir.x;
-  obj.y += dir.y;
-  obj.z += dir.z;
-  updateObjPosition(obj, dir);
 }
 function pullChain(list, dir) {
   var behindPositionObjs = [];
@@ -507,15 +519,22 @@ function drawControlHints(main) {
     makesq("h2", main[0], "controlInfo", 10, 0).innerHTML = "{ Press Space Bar to wait }";
   }
 }
+function runSolution(ind) {
+  ind = ind || 0;
+  window.pressKey({keyCode:savedSolution[ind]});
+  window.setTimeout(()=>{runSolution(ind+1);}, 300);
+}
 function updateRuleUI() {
-  var body = get("ruleUI");
-  body.innerHTML = "";
+  var body = $("#ruleUI");
+  body.html("");
   var simple = convertRulesToSimple(allSentences);
   for (var rule of simple) {
-    make("span", body).innerHTML = rule + "<br/>";
+    $(`<span>${rule}</span><br/>`).appendTo(body);
   }
 }
-function initGameState() {
-  gamestate.empty = {};
-  gamestate.size.z = gamestate.size.z || 1;
+function initGameState(gs) {
+  gs.empty = {};
+  gs.size.z = gs.size.z || 1;
+  window.savedSolution = gs.solution;
+  gs.solution = [];
 }
