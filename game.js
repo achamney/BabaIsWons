@@ -1,9 +1,10 @@
-﻿
+﻿// TODO: pull stack?, x is y is z
 var gamestate = {
     words:[],
     objects:[],
     levelId:1,
-    size: {x: 24, y: 18, z: 1}
+    size: {x: 24, y: 18, z: 1},
+    solution: []
 },globalId = 1;
 window.selectedObj = {};
 window.movesToExecute = []; 
@@ -21,8 +22,8 @@ window.onload = function () {
     $(".modal").show().css("opacity",1);
     setWindowSize();
   }
-  $("#nextlevellink").attr("href",window.location.pathname +"?levelid="+findLevelByIndex(communityLevelId, 1));
-  $("#prevlevellink").attr("href",window.location.pathname +"?levelid="+findLevelByIndex(communityLevelId, -1));
+  $("#nextlevellink").click(e=>{loadLevel(findLevelByIndex(gamestate.levelId, 1)); e.preventDefault();return false;});
+  $("#prevlevellink").click(e=>{loadLevel(findLevelByIndex(gamestate.levelId, -1)); e.preventDefault();return false;});
   $(".close").click(function() {$(".modal").hide().css("opacity",0);})
   $("#worldselect").click(function() {$(".modal").show().css("opacity",1);});
   $(".ctlleft")[0].addEventListener('touchstart',function (e) { e.preventDefault(); moveYou({ x: -1, y: 0, z: 0 }); },false);
@@ -77,12 +78,13 @@ function gamewait() {
 async function triggerWin(obj) {
   var solution = clone(gamestate.solution);
   particle(obj, "yellow", 100, 0.3);
+  playSfx("win");
   var origGameState = await netService.getGameState(gamestate.levelId);
   origGameState.solution = solution;
   await netService.setGameState(origGameState, gamestate.levelId);
   window.setTimeout(function () {
-    window.location = updateURLParameter(window.location.href, "levelid", findLevelByIndex(gamestate.levelId, 1));
-  }, 1000);
+    loadLevel(findLevelByIndex(gamestate.levelId, 1));
+  }, 1500);
 }
 function findLevelByIndex(levelid, adder) {
   var worlds = window.worlds;
@@ -128,6 +130,29 @@ function loadPremadeLevel(levelnum) {
   };
   levelTag.src=`levels/level${levelnum}.js`;
   $("head")[0].appendChild(levelTag);
+}
+function loadAudio(levelId) {
+  var audio = $("audio")[0];
+  var src = $("audio source").attr("src");
+  for (var lvl in window.worlds) {
+    if (~window.worlds[lvl].indexOf(levelId) && window.audioMapping[lvl] != src) { 
+      $("audio source").attr("src", window.audioMapping[lvl]);
+      audio.load();
+      window.audioLoaded = false;
+    }
+  }
+  if(!window.audioLoaded) {
+    window.audioLoaded = true;
+    audio.volume=0.66;
+    audio.play();
+  }
+}
+function loadLevel(levelId) {
+  var refresh = window.location.protocol + "//" + window.location.host + window.location.pathname + '?levelid='+levelId;    
+  window.history.pushState({ path: refresh }, '', refresh);
+  loadAudio(levelId);
+  loadCommunityLevel(levelId);
+  $(".modal").hide().css("opacity",0);
 }
 async function loadCommunityLevel(communityLevelId) {
   var comgamestate = await netService.getGameState(communityLevelId);
@@ -227,10 +252,15 @@ function makeGameState(level) {
     gamestate.levelId=level;
     initGameState(gamestate);
 }
-function findAtPosition(i, j, k, excludeObjects, excludeText) {
+function findAtPosition(i, j, k, excludeObjects, excludeText, lookForward) {
   var ret = [];
+  var movedIds = movesToExecute.map(m=>m.obj.id);
   if (!excludeObjects) {
     for(var obj of gamestate.objects) {
+      if (lookForward && ~movedIds.indexOf(obj.id)) {
+        var moveInfo = movesToExecute.filter(m=>m.obj.id==obj.id)[0].dir;
+        obj = {x: obj.x + moveInfo.x, y: obj.y + moveInfo.y, z: obj.z + moveInfo.z};
+      }
       if (obj.x == i && obj.y == j && obj.z == k)
         ret.push(obj);
     }
@@ -309,11 +339,23 @@ function runDeferredMoves(){
     moveEx.obj.x = moveEx.pos.x + moveEx.dir.x;
     moveEx.obj.y = moveEx.pos.y + moveEx.dir.y;
     moveEx.obj.z = moveEx.pos.z + moveEx.dir.z;
-    updateObjPosition(moveEx.obj, moveEx.dir);
+    updateObjPosition(moveEx.obj, moveEx.facing);
   }
   window.movesToExecute = [];
 }
+function playSfx(str) {
+  window.sndcnt = window.sndcnt || {};
+  sndcnt[str] = sndcnt[str] || 0;
+  var snd = $("#" + str + sndcnt[str])[0];
+  snd.volume = 0.66;
+  sndcnt[str]++;
+  if (sndcnt[str] == $("."+str+"snd").length)
+    sndcnt[str] = 0;
+  snd.play();
+}
 function moveYou(dir) {
+  playSfx("walk");
+  loadAudio(gamestate.levelId);
   var concatStuff = gamestate.objects.concat(gamestate.words);
   var yous = concatStuff.filter(o => o.you);
   undoStack.push(JSON.stringify(gamestate));
@@ -347,9 +389,9 @@ function moveYou(dir) {
     updateRuleUI();
   }
 }
-function move(gameobj,dir, cantPull) {
+function move(gameobj,dir, cantPull, lookForward) {
 
-  var newPositionObjs = findAtPosition(gameobj.x + dir.x, gameobj.y + dir.y, gameobj.z + dir.z),
+  var newPositionObjs = findAtPosition(gameobj.x + dir.x, gameobj.y + dir.y, gameobj.z + dir.z, false, false, lookForward),
       findStopChain = [gameobj];
   if (checkIsLockAndKey(gameobj, newPositionObjs)) {
     return true;
@@ -368,7 +410,7 @@ function move(gameobj,dir, cantPull) {
       updateObjPosition(newPosObj, getDirCoordsFromDir(newPosObj));
     }
   }
-  else if(findIsStop(dir, gameobj.x, gameobj.y, gameobj.z, findStopChain)) {
+  else if(findIsStop(dir, gameobj.x, gameobj.y, gameobj.z, findStopChain, lookForward)) {
     if (gameobj.move) {
       reverseDir(gameobj);
     }
@@ -385,17 +427,13 @@ function move(gameobj,dir, cantPull) {
     return false;
   }
 
-  newPositionObjs = findAtPosition(gameobj.x + dir.x, gameobj.y + dir.y, gameobj.z + dir.z);
+  newPositionObjs = findAtPosition(gameobj.x + dir.x, gameobj.y + dir.y, gameobj.z + dir.z, false, false, true);
   if (gamestate.empty.push && newPositionObjs.length == 0) {
-    newPositionObjs.push({ x: gameobj.x + dir.x, y: gameobj.y + dir.y, z: gameobj.z + dir.z, push: true });
+    newPositionObjs.push({ x: gameobj.x + dir.x, y: gameobj.y + dir.y, z: gameobj.z + dir.z, push: true, empty: true });
   }
-  var cantMove = false;
   for(var pushObj of newPositionObjs) {
-    if (isStop(pushObj) && !pushObj.you && !pushObj.push){
-      return false;
-    }
     if (canPush(pushObj) && !pushObj.you) { // TODO: make a move stack rather than assuming its you that instigated the push action
-      cantMove = cantMove || move(pushObj, dir, true);
+      move(pushObj, dir, true);
     }
     if (pushObj.swap) {
       pushObj.x = gameobj.x;
@@ -404,13 +442,11 @@ function move(gameobj,dir, cantPull) {
       updateObjPosition(pushObj, getDirCoordsFromDir(pushObj));
     }
   }
-  if(cantMove)
-    return false;
   var behindPositionObjs = findAtPosition(gameobj.x - dir.x, gameobj.y - dir.y, gameobj.z - dir.z);
   if (gamestate.empty.pull && behindPositionObjs.length == 0) {
-    behindPositionObjs.push({ x: gameobj.x - dir.x, y: gameobj.y - dir.y, z: gameobj.z - dir.z, pull: true });
+    behindPositionObjs.push({ x: gameobj.x - dir.x, y: gameobj.y - dir.y, z: gameobj.z - dir.z, pull: true, empty: true });
   }
-  window.movesToExecute.push({obj: gameobj, dir: dir, pos: deepClone(gameobj)});
+  window.movesToExecute.push({obj: gameobj, dir: dir, pos: deepClone(gameobj), facing: dir});
   if (gamestate.empty.open && newPositionObjs.length == 0 && gameobj.shut) {
     removeObj(gameobj);
     gamestate.empty.has && gamestate.empty.has.forEach(h=>{
@@ -418,22 +454,13 @@ function move(gameobj,dir, cantPull) {
     }) 
   }
   !cantPull && pullChain(behindPositionObjs, dir);
+  return true;
 }
 function pullChain(list, dir) {
   var behindPositionObjs = [];
   for(var beh of list) {
     if (beh.pull) {
-      if(isOutside(beh.x, beh.y, beh.z)) {
-        return;
-      }
-      behindPositionObjs = findAtPosition(beh.x - dir.x, beh.y - dir.y, beh.z - dir.z);
-      if (gamestate.empty.pull && behindPositionObjs.length == 0) {
-        behindPositionObjs.push({ x: beh.x - dir.x, y: beh.y - dir.y, z: beh.z - dir.z, pull: true });
-      }
-      beh.x += dir.x;
-      beh.y += dir.y;
-      beh.z += dir.z;
-      updateObjPosition(beh, dir);
+      move(beh, dir, false, true);
     }
   }
   behindPositionObjs.length > 0 && pullChain(behindPositionObjs, dir);
@@ -458,15 +485,15 @@ function updateObjPosition(obj, dir) {
   objdiv.css("left", (obj.x * gridx) + (obj.z * width / gamestate.size.z)+"px");
   objdiv.css("top", obj.y * gridy+"px");
 }
-function findIsStop(dir, x, y, z, findChain) {
+function findIsStop(dir, x, y, z, findChain, lookForward) {
   if (isOutside(x+dir.x, y+dir.y, z + dir.z)) {
     return true;
   }
-  var nextObjs = findAtPosition(x + dir.x, y + dir.y, z + dir.z);
+  var nextObjs = findAtPosition(x + dir.x, y + dir.y, z + dir.z, false, false, lookForward);
   if (gamestate.empty.push && nextObjs.length == 0) {
     nextObjs.push({ x: x + dir.x, y: y + dir.y, z: z + dir.z, push: true });
   }
-  if (gamestate.empty.pull && nextObjs.length == 0) {
+  if (gamestate.empty.pull && nextObjs.length == 0 && !findChain[findChain.length-1].empty && !lookForward) {
     return true;
   }
   if(nextObjs.length == 0) return false;

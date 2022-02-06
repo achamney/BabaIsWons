@@ -4,6 +4,9 @@ var successCallback = function(){
 }
 var numberOfTests;
 $(document).ready(async function(){
+    window.updateRuleUI = function(){};
+    window.playSfx = function(){};
+    window.loadAudio = function(){};
     window.triggerWin = function () {
         successCallback();
     }
@@ -20,7 +23,7 @@ $(document).ready(async function(){
     }
 });
 function getLevel(gamestates, lvl, testBody) {
-    netService.getGameState(lvl).then((gs)=>{
+    netService.getGameState(lvl).then((gs) => {
         gs.levelId = lvl;
         testBody.append($(`<h3 id="${lvl}">${gs.name} : ${lvl}</h3>`));
         gamestates.push(gs);
@@ -30,7 +33,21 @@ function getLevel(gamestates, lvl, testBody) {
     });
 }
 function runTests(gamestates) {
-        runOneTest(gamestates, 0);
+    var urlParams = new URLSearchParams(window.location.search);
+    var levelId = urlParams.get("levelid");
+    if (!levelId) {
+        runOneTestAndSubsequent(gamestates, 0);
+    } else {
+        var gsIndex = gamestates.map(gs => gs.levelId).indexOf(levelId);
+        runOneTest(gamestates, gsIndex);
+        $("#" + levelId)[0].scrollIntoView();
+    }
+}
+function runOneTestAndSubsequent(gamestates, index) {
+    runOneTest(gamestates, index);
+    if (index + 1 < gamestates.length) {
+        window.setTimeout(() => { runOneTestAndSubsequent(gamestates, index + 1) }, 500);
+    }
 }
 function runOneTest(gamestates, index) {
     var gs = gamestates[index];
@@ -46,13 +63,14 @@ function runOneTest(gamestates, index) {
         for (var s in solution) {
             window.pressKey({ keyCode: solution[s] });
         }
+        var levelDom = $("#" + gs.levelId);
         if (won) {
-            $("#" + gs.levelId).css("color", "green");
+            levelDom.css("color", "green");
         } else {
-            $("#" + gs.levelId).css("color", "red");
+            levelDom.css("color", "red");
         }
-    }
-    if (index + 1 < gamestates.length) {
-        window.setTimeout(() => { runOneTest(gamestates, index + 1) }, 500);
+        if (index % 10 == 0) {
+            levelDom[0].scrollIntoView();
+        }
     }
 }

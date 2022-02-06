@@ -14,6 +14,7 @@
 
   </div>
   <button id="worldselect">Select World</button>
+  <audio id="audio" autoplay loop controls><source src="music/overworld.mp3" type="audio/mpeg"></audio>
   <div id="mobileControls">
     <span class="ctlleft">&#8592;</span>
     <span class="ctlup">&#8593;</span>
@@ -28,23 +29,35 @@
     <h2>
       World Select
     </h2>
-    <span onclick="window.location='?levelid=61e1d0fd7dd2580015d2a044'"><h3>Overworld</h3><img src="img/overworld.png" /></span>
-    <span onclick="window.location='?levelid=61e1d1cd7dd2580015d2a04c'"><h3>The Lake</h3><img src="img/thelake.png" /></span>
-    <span onclick="window.location='?levelid=61dc9d364f80c300151cf338'"><h3>Solitary Island</h3><img src="img/solitaryisland.png" /></span>
-    <span onclick="window.location='?levelid=61e20ae38bab1e0015f357c3'"><h3>Temple Ruins</h3><img src="img/templeruins.png" /></span>
-    <span onclick="window.location='?levelid=61e5a7dad6f4d3001551e899'"><h3>Forest of Fall</h3><img src="img/forestoffall.png" /></span>
-    <span onclick="window.location='?levelid=61ea0f29089d870015a39f59'"><h3>Deep Forest</h3><img src="img/deepforest.png" /></span>
-    <span onclick="window.location='?levelid=61ed83aa528a6c00150b09af'"><h3>Rocket Trip</h3><img src="img/rockettrip.png" /></span>
-    <span onclick="window.location='?levelid=61f04f30e6368e0015148c95'"><h3>Flower Garden</h3><img src="img/flowergarden.png" /></span>
+    <span onclick="loadLevel('61e1d0fd7dd2580015d2a044')"><h3>Overworld</h3><img src="img/overworld.png" /></span>
+    <span onclick="loadLevel('61e1d1cd7dd2580015d2a04c')"><h3>The Lake</h3><img src="img/thelake.png" /></span>
+    <span onclick="loadLevel('61dc9d364f80c300151cf338')"><h3>Solitary Island</h3><img src="img/solitaryisland.png" /></span>
+    <span onclick="loadLevel('61e20ae38bab1e0015f357c3')"><h3>Temple Ruins</h3><img src="img/templeruins.png" /></span>
+    <span onclick="loadLevel('61e5a7dad6f4d3001551e899')"><h3>Forest of Fall</h3><img src="img/forestoffall.png" /></span>
+    <span onclick="loadLevel('61ea0f29089d870015a39f59')"><h3>Deep Forest</h3><img src="img/deepforest.png" /></span>
+    <span onclick="loadLevel('61ed83aa528a6c00150b09af')"><h3>Rocket Trip</h3><img src="img/rockettrip.png" /></span>
+    <span onclick="loadLevel('61f04f30e6368e0015148c95')"><h3>Flower Garden</h3><img src="img/flowergarden.png" /></span>
     <div class="close">X</div>
   </div>
+
+  <audio id="walk0" class="walksnd"><source src="music/walk.mp3" type="audio/mpeg"></audio>
+  <audio id="walk1" class="walksnd"><source src="music/walk.mp3" type="audio/mpeg"></audio>
+  <audio id="walk2" class="walksnd"><source src="music/walk.mp3" type="audio/mpeg"></audio>
+  <audio id="walk3" class="walksnd"><source src="music/walk.mp3" type="audio/mpeg"></audio>
+  <audio id="walk4" class="walksnd"><source src="music/walk.mp3" type="audio/mpeg"></audio>
+  <audio id="walk5" class="walksnd"><source src="music/walk.mp3" type="audio/mpeg"></audio>
+  <audio id="win0" class="winsnd"><source src="music/win.mp3" type="audio/mpeg"></audio>
 </body>
 
 <script src="jquery-3.4.1.min.js"></script>
 <script src="markgen.js"></script>
 <script src="netcode.js"></script>
 <script src="particle.js"></script>
-<script src="rules.js"></script>
+<script src="rules/is.js"></script>
+<script src="rules/has.js"></script>
+<script src="rules/make.js"></script>
+<script src="rules/adjective.js"></script>
+<script src="rules/rules.js"></script>
 <script src="undo.js"></script>
 <script src="levels/levelids.js"></script>
 <script src="game.js"></script>

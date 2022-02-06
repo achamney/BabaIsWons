@@ -8,3 +8,11 @@ window.worlds = {
     "rockettrip": ["61ed83aa528a6c00150b09af", "61ed88f4528a6c00150b09b0", "61ed89b3528a6c00150b09b1", "61edc7e33e14aa00156a3e8a", "61edcdd43e14aa00156a3e8b", "61ede90480bd5e0015a53169", "61edf71180bd5e0015a5316a", "61edf97a80bd5e0015a5316b", "61edfcf280bd5e0015a5316c", "61ee8a3253ba900015c77cd8","61eee84ea09ce800151622b3", "61eeecd7a09ce800151622b4", "61ef020f7697830015c50425", "61efe6b768359800158bd198"],
     "flowergarden": ["61f04f30e6368e0015148c95", "61f158ff1201a00015141001", "61f16c889c3a1f0015555e5d", "61f200763ef19d0015cfa447", "61f200ca3ef19d0015cfa448", "61f3dfac2dd1450015e204f5","61f681a41e0f590015cbba33", "61f6adc6fcd4450015556148", "61f6b297fcd4450015556149", "61f6ba44fcd445001555614a", "61f6cf85bf516e0015c47361", "61f9479b34eec50015de015a"]
 }
+window.audioMapping = {
+    "overworld":"music/wallisstop.mp3",
+    "thelake":"music/water.mp3",
+    "solitaryisland": "music/solitaryisland.mp3",
+    "templeruins":"music/ghost.mp3",
+    "forestoffall":"music/forestoffall.mp3",
+    "deepforest":"music/deepforest.mp3",
+}

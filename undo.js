@@ -2,6 +2,7 @@
 var undoStack = [];
 function undo() {
     if(undoStack.length == 0) return;
+    playSfx("walk");
     var lastGameStateText = undoStack.pop(),
       lastGameState = JSON.parse(lastGameStateText);
     for(var i= gamestate.objects.length -1; i>=0;i--) {
