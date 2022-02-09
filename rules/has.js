@@ -51,6 +51,9 @@ window.hasRule = {
             if (actors[0] == "text") {
                 hases = gamestate.words;
             }
+            else if (actors[0] == "all") {
+                hases = gamestate.objects;
+            }
             hases.forEach(o => {
                 o.has = o.has || [];
                 o.has.push(actors[2]);

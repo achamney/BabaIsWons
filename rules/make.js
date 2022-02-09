@@ -51,6 +51,9 @@ window.makeRule = {
             if (actors[0] == "text") {
                 makes = gamestate.words;
             }
+            if (actors[0] == "all") {
+                makes = gamestate.objects;
+            }
             makes.forEach(o => {
                 if (findAtPosition(o.x, o.y, o.z).filter(other => other.name == actors[2]).length == 0) {
                     makeNewObjectFromOld(o, actors[2], actors[0] == "text");

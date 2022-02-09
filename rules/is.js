@@ -13,15 +13,21 @@ window.isRule = {
             rightNAdjs = {},
             isIndex = 0,
             notted = false,
-            has = false;
+            has = false,
+            buildWord = "";
         for (isIndex = 0; isIndex < actors.length; isIndex++) {
-            var curActor = actors[isIndex];
+            var curActor = actors[isIndex],
+                actorChar = getCharFromActor(curActor);
             if (curActor.name == "is") {
+                addBuiltWordIfRequired(buildWord, leftNouns, notted);
+                buildWord = "";
                 break;
             }
             else if (curActor.name == "on") {
+                addBuiltWordIfRequired(buildWord, leftNouns, notted);
+                buildWord = "";
                 isIndex++;
-                curActor = actors[isIndex];
+                curActor = actors[isIndex]; // TODO: on conditional noun spelling?
                 var conditionalNoun = leftNouns[actors[isIndex - 2].name];
                 conditionalNoun.condition = conditionalNoun.condition || { on: [], facing: [] };
                 conditionalNoun.condition.on.push(curActor.name);
@@ -29,44 +35,42 @@ window.isRule = {
             else if (curActor.name == "not") {
                 notted = !notted;
             } else if (curActor.name == "and") {
+                addBuiltWordIfRequired(buildWord, leftNouns, notted);
+                buildWord = "";
                 continue;
-            } else {
+            } else if (actorChar == "n") {
                 addActorsToList(curActor, leftNouns, notted);
                 notted = false;
+            } else if (actorChar == "l") {
+                buildWord += curActor.name;
             }
         }
         for (var i = isIndex + 1; i < actors.length; i++) {
-            var curActor = actors[i];
+            var curActor = actors[i],
+            actorChar = getCharFromActor(curActor);
             if (curActor.name == "is") { // Left here in case of off by one error?
                 break;
             }
             else if (curActor.name == "not") {
                 notted = !notted;
             } else if (curActor.name == "has") {
+                this.addRightBuildWordIfRequired(buildWord, has, notted, rightHas, rightNNouns, rightNouns, rightAdjs, rightNAdjs);
                 has = true;
             } else if (curActor.name == "and") {
+                this.addRightBuildWordIfRequired(buildWord, has, notted, rightHas, rightNNouns, rightNouns, rightAdjs, rightNAdjs);
                 continue;
             } else {
-                if (getCharFromActor(curActor) == "n") {
-                    if (has) {
-                        has = false;
-                        rightHas[curActor.name] = true;
-                    } else {
-                        if (notted)
-                            rightNNouns[curActor.name] = true;
-                        else
-                            rightNouns[curActor.name] = true;
-                    }
-                } else if (getCharFromActor(curActor) == "a") {
-                    if (notted)
-                        rightNAdjs[curActor.name] = true;
-                    else
-                        rightAdjs[curActor.name] = true;
-
+                if (actorChar == "n") {
+                    has = this.addRightNoun(curActor.name, has, notted, rightHas, rightNNouns, rightNouns);
+                } else if (actorChar == "a") {
+                    this.addRightAdj(curActor.name, notted, rightAdjs, rightNAdjs);
+                } else if (actorChar == "l") {
+                    buildWord += curActor.name;
                 }
                 notted = false;
             }
         }
+        this.addRightBuildWordIfRequired(buildWord, has, notted, rightHas, rightNNouns, rightNouns, rightAdjs, rightNAdjs);
         for (var leftN in leftNouns) {
             for (var rightA in rightAdjs) {
                 runningAdjectives.push([leftNouns[leftN], "is", rightA]);
@@ -123,7 +127,10 @@ window.isRule = {
             }
           } else {
             var filteredObjs = gamestate.objects.filter(o=>o.name == actors[0].name);// allThings?
-            if (actors[0].name == "text") {
+            if (actors[0].name == "all") {
+                filteredObjs = gamestate.objects;
+            }
+            else if (actors[0].name == "text") {
               filteredObjs = gamestate.words;
             }
             filteredObjs = filterByCondition(actors, filteredObjs);
@@ -154,5 +161,37 @@ window.isRule = {
         if (rerunAdjs) {
           applyAdjectives();
         }
+    },
+    addRightNoun: function (actorName, has, notted, rightHas, rightNNouns, rightNouns) {
+        if (has) {
+            has = false;
+            rightHas[actorName] = true;
+        } else {
+            if (notted)
+                rightNNouns[actorName] = true;
+            else
+                rightNouns[actorName] = true;
+        }
+        return has;
+    },
+    addRightAdj: function(actorName, notted, rightAdjs, rightNAdjs) {
+        if (notted)
+            rightNAdjs[actorName] = true;
+        else
+            rightAdjs[actorName] = true;
+    },
+    addRightBuildWordIfRequired: function(buildWord, has, notted, rightHas, rightNNouns, rightNouns, rightAdjs, rightNAdjs) {
+        if (buildWord.length > 0) {
+            if (~wordMasks['a'].indexOf(buildWord)) {
+                this.addRightAdj(buildWord, notted,rightAdjs, rightNAdjs);
+            } else if (~wordMasks['n'].indexOf(buildWord)) {
+                this.addRightNoun(buildWord, has, notted, rightHas, rightNNouns, rightNouns);
+            }
+        }
+    }
+}
+function addBuiltWordIfRequired(word, nounList, notted) {
+    if (word.length > 0) {
+        addActorsToList({name: word}, nounList, notted);
     }
 }

@@ -1,7 +1,8 @@
 var wordMasks = {
   "a": ["you", "stop", "push", "win", "open", "shut", "move", "sink",
     "defeat", "hot", "melt", "swap", "pull", "drop", "shift", "float", 
-    "weak", "tele", "red", "blue", "up", "down", "left", "right", "fall"],
+    "weak", "tele", "red", "blue", "up", "down", "left", "right", 
+    "fall", "more", "word"],
   "v": ["is"],
   "m": ["make"],
   "h": ["has"],
@@ -11,15 +12,15 @@ var wordMasks = {
   "n": ["baba", "rock", "wall", "flag", "keke", "water", "skull",
     "lava", "grass", "jelly", "crab", "star", "love", "door", "key", 
     "text", "bolt", "box", "tree", "ice", "belt", "rose", "flower",
-    "empty"]
+    "empty", "all"]
 };
 var ruleVerbs = ["is", "has", "make"];
 var validSequences = {
-    "^(x*n(on)?)(cx*n(on)?)*v((x*n)|(x*a))((cx*n)|(cx*a)|(chn))*$": window.isRule,
+    "^(x*(n|l+)(on)?)(cx*(n|l+)(on)?)*v((x*(n|l+))|(x*(a|l+)))((cx*(n|l+))|(cx*(a|l+))|(ch(n|l+)))*$": window.isRule,
     "^n(on)?(cn(on)?)*mn(cn)*$": window.makeRule,
     "^(x*n(on)?)(cx*n(on)?)*h(x*n)(cx*n)*$": window.hasRule
   },
-  validStartingChars = ['x', 'n'];
+  validStartingChars = ['x', 'n', 'l'];
 
 var allSentences = [];
 function executeRules() {
@@ -51,6 +52,7 @@ function executeRules() {
       var obj = gamestate.words[i];
       runAdjectiveStep(obj);
     }
+    removeWordAdjectives(allSentences);
     oldRules = copyArray(allSentences);
     findAllSentences();
     breakCounter ++;
@@ -64,28 +66,29 @@ function findAllSentences() {
     validSequences[ruleName].reset();
   }
   allSentences = [];
-  gamestate.words.sort((a,b)=>a.x - b.x);
+  var wordsAndWordAdj = getWordsandWordAdjs();
+  wordsAndWordAdj.sort((a,b)=>a.x - b.x);
   for (var ruleName in validSequences) {
     for (var sChar of validStartingChars) {
-      var matchingWords = getWordsMatchingMask(sChar);
+      var matchingWords = getWordsMatchingMask(wordsAndWordAdj, sChar);
       for (var matchingWord of matchingWords) {
         executeRuleDir(matchingWord, ruleName, { x: 1, y: 0, z: 0 });
       }
     }
   }
-  gamestate.words.sort((a,b)=>a.y - b.y);
+  wordsAndWordAdj.sort((a,b)=>a.y - b.y);
   for (var ruleName in validSequences) {
     for (var sChar of validStartingChars) {
-      var matchingWords = getWordsMatchingMask(sChar);
+      var matchingWords = getWordsMatchingMask(wordsAndWordAdj, sChar);
       for (var matchingWord of matchingWords) {
         executeRuleDir(matchingWord, ruleName, { x: 0, y: 1, z: 0 });
       }
     }
   }
-  gamestate.words.sort((a,b)=>b.z - a.z);
+  wordsAndWordAdj.sort((a,b)=>b.z - a.z);
   for (var ruleName in validSequences) {
     for (var sChar of validStartingChars) {
-      var matchingWords = getWordsMatchingMask(sChar);
+      var matchingWords = getWordsMatchingMask(wordsAndWordAdj, sChar);
       for (var matchingWord of matchingWords) {
         executeRuleDir(matchingWord, ruleName, { x: 0, y: 0, z: -1 });
       }
@@ -184,11 +187,15 @@ function getCharFromActor(actor) {
       return c;
     }
   }
+  return "l";
 }
-function getWordsMatchingMask(char) {
+function getWordsandWordAdjs(){
+  return gamestate.words.concat(gamestate.objects.filter(o => o.word));
+}
+function getWordsMatchingMask(wordlist, char) {
   var ret = [];
-  for (var word of gamestate.words) {
-    if (~wordMasks[char].indexOf(word.name)) {
+  for (var word of wordlist) {
+    if (getCharFromActor(word) == char) {
       ret.push(word);
     }
   }

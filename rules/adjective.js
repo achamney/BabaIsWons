@@ -30,6 +30,12 @@ function runAdjectiveStep(obj) {
             return;
         }
     }
+    if (obj.more) {
+        makeInDirection({ x: - 1, y: 0, z: 0 }, obj, ~gamestate.words.indexOf(obj));
+        makeInDirection({ x: 0, y: 1, z: 0 }, obj, ~gamestate.words.indexOf(obj));
+        makeInDirection({ x: 0, y: - 1, z: 0 }, obj, ~gamestate.words.indexOf(obj));
+        makeInDirection({ x: 1, y: 0, z: 0 }, obj, ~gamestate.words.indexOf(obj));
+    }
     if (obj.defeat) {
         var objsAtPos = findAtPosition(obj.x, obj.y, obj.z);
         for (var defeated of objsAtPos) {
@@ -79,6 +85,18 @@ function runAdjectiveStep(obj) {
         }
     }
 }
+function makeInDirection(dir, obj, isWord) {
+    if (findAtPosition(obj.x+dir.x, obj.y+dir.y, obj.z+dir.z).filter(o => o.name == obj.name || o.stop || o.push || o.pull).length == 0
+        && !isOutside(obj.x+dir.x, obj.y+dir.y, obj.z+dir.z)) {
+        var newObj = clone(obj);
+        gamestate.objects.push(newObj);
+        makeThing($("#gamebody"), newObj, null, null, null, "id"+globalId++, !isWord);
+        newObj.x += dir.x;
+        newObj.y += dir.y;
+        newObj.z += dir.z;
+        updateObjPosition(newObj, dir);
+    }
+}
 
 function applyAdjectives() {
     for (var actors of runningAdjectives) {
@@ -92,6 +110,9 @@ function executeAdjectiveImpl(actors) {
     var nouns = gamestate.objects.filter(o => o.name == actors[0].name);
     if (actors[0].name == "text") {
         nouns = gamestate.words;
+    }
+    else if (actors[0].name == "all") {
+        nouns = gamestate.objects;
     }
     nouns = filterByCondition(actors, nouns);
     for (var noun of nouns) {
@@ -118,9 +139,21 @@ function removeAllAdjectives(gs, dontRemoveTextClasses) {
 function removeAdjectives(obj) {
     var objdom = $("#" + obj.id);
     for (var adjective of wordMasks.a) {
-        delete obj[adjective];
-        objdom.removeClass(adjective);
+        if (adjective != "word") { // Word needs to be maintained till after rule processing
+            delete obj[adjective];
+            objdom.removeClass(adjective);
+        }
     }
     delete obj.used;
     delete obj.has;
+}
+function removeWordAdjectives(allSentences) {
+    var wordSentences = allSentences.filter(s => s[2].name == "word").map(s => s[0].name);
+    for (var obj of gamestate.objects) {
+        if (!(~wordSentences.indexOf(obj.name))) {
+            var objdom = $("#" + obj.id);
+            delete obj["word"];
+            objdom.removeClass("word");
+        }
+    }
 }

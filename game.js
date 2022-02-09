@@ -244,6 +244,7 @@ function makeNewObjectFromOld(oldObj, newName, isWord) {
     newObj.name = newName;
   }
   makeThing($("#gamebody"), newObj, null, null, null, "id"+globalId++, !isWord);
+  return newObj;
 }
 function makeGameState(level) {
     if (window.leveldata) {
@@ -259,14 +260,15 @@ function findAtPosition(i, j, k, excludeObjects, excludeText, lookForward) {
     for(var obj of gamestate.objects) {
       if (lookForward && ~movedIds.indexOf(obj.id)) {
         var moveInfo = movesToExecute.filter(m=>m.obj.id==obj.id)[0].dir;
-        obj = {x: obj.x + moveInfo.x, y: obj.y + moveInfo.y, z: obj.z + moveInfo.z};
+        obj = {x: obj.x + moveInfo.x, y: obj.y + moveInfo.y, z: obj.z + moveInfo.z, name: obj.name};
       }
       if (obj.x == i && obj.y == j && obj.z == k)
         ret.push(obj);
     }
   }
   if(!excludeText) {
-    for(var obj of gamestate.words) {
+    var wordsAndWordAdj = gamestate.words.concat(gamestate.objects.filter(o => o.word));
+    for(var obj of wordsAndWordAdj) {
       if (obj.x == i && obj.y == j && obj.z == k)
         ret.push(obj);
     }
@@ -315,7 +317,7 @@ function makeThing(parent, thing, gridx, gridy, gridz, globalId, isObject) {
     gridy = height / gamestate.size.y;
     gridz = width / gamestate.size.z;
   }
-  var displayClass = isObject ? thing.name : "word " + thing.name+"word";
+  var displayClass = isObject ? thing.name : "gameword " + thing.name+"word";
   if (~wordMasks.a.indexOf(thing.name)) {
     displayClass += " action";
   }

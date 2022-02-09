@@ -18,7 +18,7 @@ body {
   background-color: black;
   position: relative;
 }
-.word {
+.gameword {
   font-size: 2.2vh;
   color: #999;
   font-family: system-ui;
@@ -30,14 +30,14 @@ body {
   word-break: break-all;
   line-height: 0.8;
 }
-.word.active{
+.gameword.active{
   color: white;
 }
-.word.action {
+.gameword.action {
   border-radius: 4px;
   background-color: rgb(82, 53, 39);
 }
-.word.action.active{
+.gameword.action.active{
   background-color: brown;
 }
 .particle {
@@ -129,82 +129,82 @@ body {
 .flower {
   background-image: url("img/flower.png")
 }
-.word.babaword {
+.gameword.babaword {
   color: pink;
   font-size:3.2vh;
 }
-.word.wallword {
+.gameword.wallword {
   color: #667;
 }
-.word.flagword {
+.gameword.flagword {
   color: yellow;
 }
-.word.rockword {
+.gameword.rockword {
   color: brown;
 }
-.word.kekeword {
+.gameword.kekeword {
   color: orange;
 }
-.word.waterword {
+.gameword.waterword {
   color: #66F;
 }
-.word.defeatword {
+.gameword.defeatword {
   background-color:#600;
 }
-.word.skullword {
+.gameword.skullword {
   color:#900;
 }
-.word.lavaword {
+.gameword.lavaword {
   color:#F70;
 }
-.word.grassword {
+.gameword.grassword {
   color:#4F8;
   font-size:2.4vh;
 }
-.word.jellyword {
+.gameword.jellyword {
   color:#46D;
 }
-.word.crabword {
+.gameword.crabword {
   color:#F66;
 }
-.word.starword {
+.gameword.starword {
   color:#DD6;
 }
-.word.loveword {
+.gameword.loveword {
   color:#FDD;
 }
-.word.doorword {
+.gameword.doorword {
   color:#830;
   font-size:2.8vh;
 }
-.word.boxword {
+.gameword.boxword {
   color:#830;
 }
-.word.keyword {
+.gameword.keyword {
   color:#FF9;
 }
-.word.notword {
+.gameword.notword {
   color: red;
 }
-.word.roseword {
+.gameword.roseword {
   color: #B00;
 }
-.word.violetword {
+.gameword.violetword {
   color: #55B;
 }
-.word.boltword {
+.gameword.boltword {
   color: #FFB;
 }
-.word.treeword {
+.gameword.treeword {
   color: #090;
 }
-.word.beltword {
+.gameword.beltword {
   color: #44D;
 }
-.word.flowerword {
+.gameword.flowerword {
   color: #49D;
 }
-.word.iceword {
+.gameword.iceword {
   color:rgb(42, 144, 202);
 }
 button.selected {
@@ -262,7 +262,7 @@ button.selected {
   .ctlz { left: 45vw; }
   .ctlspace { left: 60vw; }
   #ruleUI {
-    display: block;
+    display: none;
   }
 
   .modal span img {
