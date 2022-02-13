@@ -69,8 +69,21 @@ body {
 .belt.l { background-position-y: 34%; }
 .belt.u { background-position-y: 69%; }
 .belt.d { background-position-y: 100%; }
+.ghost{
+  background-image: url("img/ghost.png"); 
+}
+.ghost.r { background-position-y: 0px; }
+.ghost.l { background-position-y: 34%; }
+.ghost.u { background-position-y: 69%; }
+.ghost.d { background-position-y: 103%; }
 .wall {
   background-image: url("img/wall.png")
+}
+.fungus {
+  background-image: url("img/mushroom.png")
+}
+.fire {
+  background-image: url("img/fire.png")
 }
 .rose {
   background-image: url("img/rose.png")
@@ -136,6 +149,9 @@ body {
 .gameword.wallword {
   color: #667;
 }
+.gameword.fireword {
+  color: #a50;
+}
 .gameword.flagword {
   color: yellow;
 }
@@ -147,6 +163,9 @@ body {
 }
 .gameword.waterword {
   color: #66F;
+}
+.gameword.fungusword {
+  color: #AA0;
 }
 .gameword.defeatword {
   background-color:#600;
@@ -203,6 +222,12 @@ body {
 }
 .gameword.flowerword {
   color: #49D;
+}
+.gameword.groupword {
+  color: #1AA;
+}
+.gameword.ghostword {
+  color: rgb(158, 67, 180);
 }
 .gameword.iceword {
   color:rgb(42, 144, 202);
@@ -301,6 +326,7 @@ button.selected {
   opacity: 0;
   border: 3px solid #cc0e62;
   padding-left: 30px;
+  overflow-y: au
 }
 .modal img {
   width: 200px;

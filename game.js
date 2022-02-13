@@ -4,7 +4,8 @@ var gamestate = {
     objects:[],
     levelId:1,
     size: {x: 24, y: 18, z: 1},
-    solution: []
+    solution: [],
+    group:[]
 },globalId = 1;
 window.selectedObj = {};
 window.movesToExecute = []; 
@@ -161,20 +162,11 @@ async function loadCommunityLevel(communityLevelId) {
   initGameState(comgamestate);
   setWindowSize();
   drawGameState();
-  if (~window.worlds.thelake.indexOf(communityLevelId)) {
-    $("#gamebody").css("background-color","#002")
-  }
-  else if (~window.worlds.solitaryisland.indexOf(communityLevelId)) {
-    $("#gamebody").css("background-color","#100")
-  }
-  else if (~window.worlds.templeruins.indexOf(communityLevelId)) {
-    $("#gamebody").css("background-color","#010")
-  }
-  else if (~window.worlds.forestoffall.indexOf(communityLevelId)) {
-    $("#gamebody").css("background-color","#110")
-  }
-  else if (~window.worlds.deepforest.indexOf(communityLevelId)) {
-    $("#gamebody").css("background-color","#010")
+  
+  for (var lvl in window.worlds) {
+    if (~window.worlds[lvl].indexOf(communityLevelId)) { 
+      $("#gamebody").css("background-color",window.colorMapping[lvl])
+    }
   }
 }
 function setWindowSize() {
@@ -434,7 +426,7 @@ function move(gameobj,dir, cantPull, lookForward) {
     newPositionObjs.push({ x: gameobj.x + dir.x, y: gameobj.y + dir.y, z: gameobj.z + dir.z, push: true, empty: true });
   }
   for(var pushObj of newPositionObjs) {
-    if (canPush(pushObj) && !pushObj.you) { // TODO: make a move stack rather than assuming its you that instigated the push action
+    if (canPush(pushObj) && !pushObj.you && !pushObj.swap) { // TODO: make a move stack rather than assuming its you that instigated the push action
       move(pushObj, dir, true);
     }
     if (pushObj.swap) {
@@ -566,4 +558,5 @@ function initGameState(gs) {
   gs.size.z = gs.size.z || 1;
   window.savedSolution = gs.solution;
   gs.solution = [];
+  gs.group = [];
 }

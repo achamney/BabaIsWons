@@ -8,17 +8,17 @@ var wordMasks = {
   "h": ["has"],
   "c": ["and"],
   "x": ["not"],
-  "o": ["on"],
+  "o": ["on", "facing"],
   "n": ["baba", "rock", "wall", "flag", "keke", "water", "skull",
     "lava", "grass", "jelly", "crab", "star", "love", "door", "key", 
     "text", "bolt", "box", "tree", "ice", "belt", "rose", "flower",
-    "empty", "all"]
+    "empty", "all", "fire", "group", "ghost", "fungus"]
 };
 var ruleVerbs = ["is", "has", "make"];
 var validSequences = {
-    "^(x*(n|l+)(on)?)(cx*(n|l+)(on)?)*v((x*(n|l+))|(x*(a|l+)))((cx*(n|l+))|(cx*(a|l+))|(ch(n|l+)))*$": window.isRule,
-    "^n(on)?(cn(on)?)*mn(cn)*$": window.makeRule,
-    "^(x*n(on)?)(cx*n(on)?)*h(x*n)(cx*n)*$": window.hasRule
+    "^(x*(n|l+)(x*on)?)(cx*(n|l+)(x*on)?)*v((x*(n|l+))|(x*(a|l+)))((cx*(n|l+))|(cx*(a|l+))|(ch(n|l+)))*$": window.isRule,
+    "^n(x*on)?(cn(x*on)?)*mn(cn)*$": window.makeRule,
+    "^(x*n(x*on)?)(cx*n(x*on)?)*h(x*n)(cx*n)*$": window.hasRule
   },
   validStartingChars = ['x', 'n', 'l'];
 
@@ -37,9 +37,6 @@ function executeRules() {
   findAllSentences();
   while (sentencesHaveChanged(allSentences, oldRules)) {
     removeAllAdjectives(gamestate);
-    for (var word of gamestate.words) {
-      word.push = true;
-    }
     for (var ruleName in validSequences) {
       validSequences[ruleName].apply();
     }
@@ -71,9 +68,9 @@ function findAllSentences() {
   for (var ruleName in validSequences) {
     for (var sChar of validStartingChars) {
       var matchingWords = getWordsMatchingMask(wordsAndWordAdj, sChar);
-      for (var matchingWord of matchingWords) {
+       for (var matchingWord of matchingWords) {
         executeRuleDir(matchingWord, ruleName, { x: 1, y: 0, z: 0 });
-      }
+       }
     }
   }
   wordsAndWordAdj.sort((a,b)=>a.y - b.y);
@@ -141,17 +138,22 @@ function checkIsLockAndKey(obj1, objs2) {
 }
 function executeRuleDir(matchingWord, ruleName, dir) {
   var actors = [findAtPosition(matchingWord.x, matchingWord.y, matchingWord.z, true)],
-      abvSentence = getCharFromActor(matchingWord),
+      abvSentence = [getCharFromActor(matchingWord)],
       lastValidActors = [],
       lastActor = matchingWord,
       regexp = new RegExp(ruleName),
       nextWord = findAtPosition(lastActor.x + dir.x, lastActor.y + dir.y, lastActor.z + dir.z, true);
   while (nextWord.length > 0) {
     actors.push(nextWord);
-    lastActor = nextWord[0];
-    abvSentence += getCharFromActor(lastActor);
-    if (regexp.test(abvSentence)) {
-      lastValidActors = copyArray(actors);
+    for(var wordIndex in nextWord) {
+      lastActor = nextWord[wordIndex];
+      abvSentence[wordIndex] = abvSentence[wordIndex] || ""+abvSentence[wordIndex-1]; 
+    }
+    for(var sInd in abvSentence) {
+      abvSentence[sInd] += getCharFromActor(nextWord[sInd]? nextWord[sInd] : nextWord[sInd-1]);
+      if (regexp.test(abvSentence[sInd])) {// TODO: Multi word hack here doesn't work with multiple double words
+        lastValidActors = copyArray(actors);
+      }
     }
     nextWord = findAtPosition(lastActor.x + dir.x, lastActor.y + dir.y, lastActor.z + dir.z, true);
   }
@@ -213,17 +215,34 @@ function addActorsToList(actor, list, notted) {
   }
 }
 function filterByCondition(actors, nouns) {
-  if (actors[0].condition) {
-    if (actors[0].condition.on) {
-      nouns = nouns.filter(n=>{
-        var others = [];
-        if (~actors[0].condition.on.indexOf("text")) {
-          others = findAtPosition(n.x, n.y, n.z, true)
-        } else {
-          others = findAtPosition(n.x, n.y, n.z, false, true).filter(o=>o!=n && ~actors[0].condition.on.indexOf(o.name));
-        }
-        return others.length > 0;
-      });
+  var condition = actors[0].condition;
+  if (condition) {
+    if (condition.on) {
+      for (var condClause of condition.on) {
+        nouns = nouns.filter(n => {
+          var others = [];
+          if (condClause.name == "text") {
+            others = findAtPosition(n.x, n.y, n.z, true)
+          } else {
+            others = findAtPosition(n.x, n.y, n.z, false, true).filter(o => o != n && condClause.name == o.name);
+          }
+          return condClause.prenot ? (others.length == 0) : (others.length > 0);
+        });
+      }
+    }
+    if (condition.facing) {
+      for (var condClause of condition.facing) {
+        nouns = nouns.filter(n => {
+          var dir = getDirCoordsFromDir(n);
+          var others = [];
+          if (condClause.name == "text") {
+            others = findAtPosition(n.x + dir.x, n.y + dir.y, n.z + dir.z, true)
+          } else {
+            others = findAtPosition(n.x + dir.x, n.y + dir.y, n.z + dir.z, false, true).filter(o => o != n && condClause.name == o.name);
+          }
+          return condClause.prenot ? (others.length == 0) : (others.length > 0);
+        });
+      }
     }
   }
   return nouns;

@@ -57,7 +57,7 @@ function runAdjectiveStep(obj) {
         }
     }
     if (obj.fall) {
-        var newPositionObjs = findAtPosition(obj.x, obj.y + 1, obj.z).filter(o => o.push || o.stop);
+        var newPositionObjs = findAtPosition(obj.x, obj.y + 1, obj.z).filter(o => o.push || o.stop || o.pull);
         while (newPositionObjs.length == 0 && !isOutside(obj.x, obj.y + 1, obj.z)) {
             obj.y += 1;
             updateObjPosition(obj, getDirCoordsFromDir(obj));
@@ -68,7 +68,7 @@ function runAdjectiveStep(obj) {
         var objsAtPos = findAtPosition(obj.x, obj.y, obj.z).filter(o => o.id != obj.id);
         var otherTeles = gamestate.objects.filter(o => o.name == obj.name && o.id != obj.id);
         for (var teled of objsAtPos) {
-            if (!teled.teled && teled.float == obj.float) {
+            if (!teled.teled && teled.float == obj.float && otherTeles.length >= 1) {
                 var otherTele = otherTeles[Math.floor(Math.random() * otherTeles.length)];
                 teled.x = otherTele.x;
                 teled.y = otherTele.y;
@@ -99,15 +99,24 @@ function makeInDirection(dir, obj, isWord) {
 }
 
 function applyAdjectives() {
+    var allInGroup = runningEqualities.filter(a => a[2] == "group").map(a => a[0].name).filter((w, i, self) => self.indexOf(w) === i); // get only unique noun names;
     for (var actors of runningAdjectives) {
-        if (runningNAdjectives.filter(n => n[0].name == actors[0].name && n[3] == actors[2]).length > 0) {
-            continue;
+        if (actors[0].name == "group") {
+            for (var noun of allInGroup) {
+                executeAdjectiveImpl([{ name: noun }, "", actors[2]]);
+            }
+        } else {
+            executeAdjectiveImpl(actors);
         }
-        executeAdjectiveImpl(actors);
     }
 }
 function executeAdjectiveImpl(actors) {
+
+    if (runningNAdjectives.filter(n => n[0].name == actors[0].name && n[3] == actors[2]).length > 0) {
+        return;
+    }
     var nouns = gamestate.objects.filter(o => o.name == actors[0].name);
+    
     if (actors[0].name == "text") {
         nouns = gamestate.words;
     }
