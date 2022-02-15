@@ -355,8 +355,8 @@ function moveYou(dir) {
   undoStack.push(JSON.stringify(gamestate));
   window.movesToExecute = [];
   if(gamestate.empty.you) {
-    var pushes = concatStuff.filter(c=>c.push);
-    for (var p of pushes){
+    var pushes = concatStuff.filter(c => c.push);
+    for (var p of pushes) {
       var findEmpty = findAtPosition(p.x - dir.x, p.y - dir.y, p.z - dir.z);
       if (findEmpty.length == 0) {
         move(p, dir);
@@ -370,8 +370,9 @@ function moveYou(dir) {
   if (yous.length > 0) {
     $(".gridline").css("outline","1px solid #111");
     for(var obj of yous) {
-      particle(obj, "white", 1, 0.01);
-      move(obj, dir);
+      if(move(obj, dir)) {
+        particle(obj, "white", 1, 0.01);
+      }
       if(gamestate.size.z > 1){
         $(".gridline.gridx"+obj.x).css("outline","1px solid #522");
         $(".gridline.gridy"+obj.y).css("outline","1px solid #522");
@@ -426,7 +427,7 @@ function move(gameobj,dir, cantPull, lookForward) {
     newPositionObjs.push({ x: gameobj.x + dir.x, y: gameobj.y + dir.y, z: gameobj.z + dir.z, push: true, empty: true });
   }
   for(var pushObj of newPositionObjs) {
-    if (canPush(pushObj) && !pushObj.you && !pushObj.swap) { // TODO: make a move stack rather than assuming its you that instigated the push action
+    if (canPush(pushObj) /*&& !pushObj.you*/ && !pushObj.swap) { // TODO: make a move stack rather than assuming its you that instigated the push action
       move(pushObj, dir, true);
     }
     if (pushObj.swap) {

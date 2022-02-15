@@ -226,6 +226,9 @@ body {
 .gameword.groupword {
   color: #1AA;
 }
+.gameword.lonelyword {
+  color: rgb(204, 75, 0);
+}
 .gameword.ghostword {
   color: rgb(158, 67, 180);
 }

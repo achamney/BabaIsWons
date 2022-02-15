@@ -7,7 +7,7 @@ var wordMasks = {
   "m": ["make"],
   "h": ["has"],
   "c": ["and"],
-  "x": ["not"],
+  "x": ["not", "lonely"], /* Lonely here is a bit of a hack. lonely lonely baba is you isn't supposed to be valid*/ 
   "o": ["on", "facing"],
   "n": ["baba", "rock", "wall", "flag", "keke", "water", "skull",
     "lava", "grass", "jelly", "crab", "star", "love", "door", "key", 
@@ -204,14 +204,19 @@ function getWordsMatchingMask(wordlist, char) {
   return ret;
 }
 
-function addActorsToList(actor, list, notted) {
+function addActorsToList(actor, list, notted, lonely) {
   if (notted) {
     var allOtherNouns = wordMasks.n.filter(n => gamestate.objects.filter(o => o.name == n && n != actor.name).length > 0);
     for (var noun of allOtherNouns) {
       list[noun] = {name : noun};
     }
   } else {
-    list[actor.name] = {name : actor.name};
+    var newNoun = { name: actor.name };
+    list[actor.name] = newNoun;
+    if (lonely) { // TODO: NOT LONELY vs LONELY NOT
+      newNoun.condition = newNoun.condition || { on: [], facing: [] };
+      newNoun.condition.on.push({ name: "", prenot: true, postnot: true });
+    }
   }
 }
 function filterByCondition(actors, nouns) {
@@ -224,7 +229,11 @@ function filterByCondition(actors, nouns) {
           if (condClause.name == "text") {
             others = findAtPosition(n.x, n.y, n.z, true)
           } else {
-            others = findAtPosition(n.x, n.y, n.z, false, true).filter(o => o != n && condClause.name == o.name);
+            if (condClause.postnot) {
+              others = findAtPosition(n.x, n.y, n.z, false, true).filter(o => o != n && condClause.name != o.name);
+            } else {
+              others = findAtPosition(n.x, n.y, n.z, false, true).filter(o => o != n && condClause.name == o.name);
+            }
           }
           return condClause.prenot ? (others.length == 0) : (others.length > 0);
         });

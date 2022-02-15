@@ -13,18 +13,19 @@ window.isRule = {
             rightNAdjs = {},
             isIndex = 0,
             notted = false,
+            lonely = false,
             has = false,
             buildWord = "";
         for (isIndex = 0; isIndex < actors.length; isIndex++) {
             var curActor = actors[isIndex],
                 actorChar = getCharFromActor(curActor);
             if (curActor.name == "is") {
-                addBuiltWordIfRequired(buildWord, leftNouns, notted);
+                addBuiltWordIfRequired(buildWord, leftNouns, notted, lonely);
                 buildWord = "";
                 break;
             }
             else if (curActor.name == "on") {
-                addBuiltWordIfRequired(buildWord, leftNouns, notted);
+                addBuiltWordIfRequired(buildWord, leftNouns, notted, lonely);
                 buildWord = "";
                 isIndex++;
                 curActor = actors[isIndex]; // TODO: on conditional noun spelling?
@@ -34,9 +35,10 @@ window.isRule = {
                     conditionalNoun.condition.on.push({name: curActor.name, prenot: notted, postnot: false}); // TODO: ON NOT <noun>
                 }
                 notted = false;
+                lonely = false;
             }
             else if (curActor.name == "facing") {
-                addBuiltWordIfRequired(buildWord, leftNouns, notted);
+                addBuiltWordIfRequired(buildWord, leftNouns, notted, lonely);
                 buildWord = "";
                 isIndex++;
                 curActor = actors[isIndex]; // TODO: on conditional noun spelling?
@@ -46,16 +48,21 @@ window.isRule = {
                     conditionalNoun.condition.facing.push({name: curActor.name, prenot: notted, postnot: false}); // TODO: ON NOT <noun>
                 }
                 notted = false;
+                lonely = false;
             }
             else if (curActor.name == "not") {
                 notted = !notted;
+            } 
+            else if (curActor.name == "lonely") {
+                lonely = true;
             } else if (curActor.name == "and") {
-                addBuiltWordIfRequired(buildWord, leftNouns, notted);
+                addBuiltWordIfRequired(buildWord, leftNouns, notted, lonely);
                 buildWord = "";
                 continue;
             } else if (actorChar == "n") {
-                addActorsToList(curActor, leftNouns, notted);
+                addActorsToList(curActor, leftNouns, notted, lonely);
                 notted = false;
+                lonely = false;
             } else if (actorChar == "l") {
                 buildWord += curActor.name;
             }
@@ -180,13 +187,13 @@ window.isRule = {
         }
         if (isIndex - reverseInd > 0) {
             reverseInd++;
-            actorChar = getCharFromActor(actors[isIndex - reverseInd]);
-            while (actorChar == "x") {
+            var thisActor = actors[isIndex - reverseInd];
+            while (thisActor.name == "not") {
                 notted = !notted;
                 reverseInd++;
                 if (isIndex - reverseInd <0) 
                     break;
-                actorChar = getCharFromActor(actors[isIndex - reverseInd]);
+                thisActor = actors[isIndex - reverseInd];
             }
         }
         if (notted) {
@@ -260,8 +267,8 @@ window.isRule = {
         }
     }
 }
-function addBuiltWordIfRequired(word, nounList, notted) {
+function addBuiltWordIfRequired(word, nounList, notted, lonely) {
     if (word.length > 0) {
-        addActorsToList({name: word}, nounList, notted);
+        addActorsToList({name: word}, nounList, notted, lonely);
     }
 }
