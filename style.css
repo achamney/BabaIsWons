@@ -121,6 +121,9 @@ body {
 .star {
   background-image: url("img/star.png")
 }
+.moon {
+  background-image: url("img/moon.png")
+}
 .love {
   background-image: url("img/love.png")
 }
@@ -148,6 +151,9 @@ body {
 }
 .gameword.wallword {
   color: #667;
+}
+.gameword.levelword {
+  color: rgb(108, 3, 129);
 }
 .gameword.fireword {
   color: #a50;
@@ -187,6 +193,9 @@ body {
   color:#F66;
 }
 .gameword.starword {
+  color:#DD6;
+}
+.gameword.moonword {
   color:#DD6;
 }
 .gameword.loveword {

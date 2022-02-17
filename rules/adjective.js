@@ -99,13 +99,24 @@ function makeInDirection(dir, obj, isWord) {
 }
 
 function applyAdjectives() {
+    var allThingNames = wordMasks.n;
     var allInGroup = runningEqualities.filter(a => a[2] == "group").map(a => a[0].name).filter((w, i, self) => self.indexOf(w) === i); // get only unique noun names;
     for (var actors of runningAdjectives) {
         if (actors[0].name == "group") {
             for (var noun of allInGroup) {
                 executeAdjectiveImpl([{ name: noun }, "", actors[2]]);
             }
-        } else {
+        } else if (actors[0].name == "level") {
+            for (var noun of allThingNames) {
+                executeAdjectiveImpl([{ name: noun }, "", actors[2]]);
+            }
+        } 
+        else if (actors[0].name == "all") {
+            for (var noun of physicalNouns) {
+                executeAdjectiveImpl([{ name: noun }, "", actors[2]]);
+            }
+        }
+        else {
             executeAdjectiveImpl(actors);
         }
     }
@@ -119,9 +130,6 @@ function executeAdjectiveImpl(actors) {
     
     if (actors[0].name == "text") {
         nouns = gamestate.words;
-    }
-    else if (actors[0].name == "all") {
-        nouns = gamestate.objects;
     }
     nouns = filterByCondition(actors, nouns);
     for (var noun of nouns) {

@@ -77,15 +77,18 @@ function gamewait() {
   updateRuleUI();
 }
 async function triggerWin(obj) {
-  var solution = clone(gamestate.solution);
-  particle(obj, "yellow", 100, 0.3);
-  playSfx("win");
-  var origGameState = await netService.getGameState(gamestate.levelId);
-  origGameState.solution = solution;
-  await netService.setGameState(origGameState, gamestate.levelId);
-  window.setTimeout(function () {
-    loadLevel(findLevelByIndex(gamestate.levelId, 1));
-  }, 1500);
+  if (!gamestate.wonAlready) {
+    gamestate.wonAlready = true;
+    var solution = clone(gamestate.solution);
+    particle(obj, "yellow", 100, 0.3);
+    playSfx("win");
+    /*var origGameState = await netService.getGameState(gamestate.levelId);
+    origGameState.solution = solution;
+    await netService.setGameState(origGameState, gamestate.levelId);*/
+    window.setTimeout(function () {
+      loadLevel(findLevelByIndex(gamestate.levelId, 1));
+    }, 1500);
+  }
 }
 function findLevelByIndex(levelid, adder) {
   var worlds = window.worlds;
@@ -408,14 +411,15 @@ function move(gameobj,dir, cantPull, lookForward) {
   else if(findIsStop(dir, gameobj.x, gameobj.y, gameobj.z, findStopChain, lookForward)) {
     if (gameobj.move) {
       reverseDir(gameobj);
-    }
-    for (var i = findStopChain.length - 1; i >= 0; i--) {
-      var find = findStopChain[i];
-      if (find.weak) {
-        removeObj(find);
-        var other = findStopChain[i+1];
-        if (other && other.weak) {
-          removeObj(other);
+    } else {
+      for (var i = findStopChain.length - 1; i >= 0; i--) {
+        var find = findStopChain[i];
+        if (find.weak) {
+          removeObj(find);
+          var other = findStopChain[i + 1];
+          if (other && other.weak) {
+            removeObj(other);
+          }
         }
       }
     }

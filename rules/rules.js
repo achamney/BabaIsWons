@@ -1,3 +1,6 @@
+var physicalNouns = ["baba", "rock", "wall", "flag", "keke", "water", "skull",
+  "lava", "grass", "jelly", "crab", "star", "love", "door", "key", "bolt",
+  "box", "tree", "ice", "belt", "rose", "flower", "fire", "ghost", "fungus", "moon"];
 var wordMasks = {
   "a": ["you", "stop", "push", "win", "open", "shut", "move", "sink",
     "defeat", "hot", "melt", "swap", "pull", "drop", "shift", "float", 
@@ -9,10 +12,7 @@ var wordMasks = {
   "c": ["and"],
   "x": ["not", "lonely"], /* Lonely here is a bit of a hack. lonely lonely baba is you isn't supposed to be valid*/ 
   "o": ["on", "facing"],
-  "n": ["baba", "rock", "wall", "flag", "keke", "water", "skull",
-    "lava", "grass", "jelly", "crab", "star", "love", "door", "key", 
-    "text", "bolt", "box", "tree", "ice", "belt", "rose", "flower",
-    "empty", "all", "fire", "group", "ghost", "fungus"]
+  "n": ["text", "empty", "all", "group", "level"].concat(physicalNouns)
 };
 var ruleVerbs = ["is", "has", "make"];
 var validSequences = {
@@ -20,7 +20,7 @@ var validSequences = {
     "^n(x*on)?(cn(x*on)?)*mn(cn)*$": window.makeRule,
     "^(x*n(x*on)?)(cx*n(x*on)?)*h(x*n)(cx*n)*$": window.hasRule
   },
-  validStartingChars = ['x', 'n', 'l'];
+  validStartingChars = ['x', 'l', 'n'];
 
 var allSentences = [];
 function executeRules() {
@@ -137,23 +137,31 @@ function checkIsLockAndKey(obj1, objs2) {
   }
 }
 function executeRuleDir(matchingWord, ruleName, dir) {
-  var actors = [findAtPosition(matchingWord.x, matchingWord.y, matchingWord.z, true)],
-      abvSentence = [getCharFromActor(matchingWord)],
+  var actors = [],
+      abvSentence = [""],
       lastValidActors = [],
       lastActor = matchingWord,
       regexp = new RegExp(ruleName),
-      nextWord = findAtPosition(lastActor.x + dir.x, lastActor.y + dir.y, lastActor.z + dir.z, true);
+      nextWord = findAtPosition(lastActor.x, lastActor.y, lastActor.z, true);
   while (nextWord.length > 0) {
-    actors.push(nextWord);
     for(var wordIndex in nextWord) {
       lastActor = nextWord[wordIndex];
-      abvSentence[wordIndex] = abvSentence[wordIndex] || ""+abvSentence[wordIndex-1]; 
+      abvSentence[wordIndex] = abvSentence[wordIndex] == undefined ? ""+abvSentence[wordIndex-1] : abvSentence[wordIndex] ; 
     }
+    var nextChar0 = getCharFromActor(nextWord[0]);
+    if (nextChar0 == "l") {
+      var actorCandidate = getActorFromLetters(nextWord[0], dir);
+      if (!actorCandidate) break;
+      nextWord = [actorCandidate];
+      lastActor = nextWord[0].parentActors[nextWord[0].parentActors.length - 1];
+    } 
+    actors.push(nextWord);
     for(var sInd in abvSentence) {
       abvSentence[sInd] += getCharFromActor(nextWord[sInd]? nextWord[sInd] : nextWord[sInd-1]);
       if (regexp.test(abvSentence[sInd])) {// TODO: Multi word hack here doesn't work with multiple double words
         lastValidActors = copyArray(actors);
       }
+    
     }
     nextWord = findAtPosition(lastActor.x + dir.x, lastActor.y + dir.y, lastActor.z + dir.z, true);
   }
@@ -182,6 +190,30 @@ function executeRuleDir(matchingWord, ruleName, dir) {
       validSequences[ruleName].execute(multiplex, dir);
     }
   }
+}
+function getActorFromLetters(actor, dir) {
+  var curActor = actor,
+    curChar = getCharFromActor(actor),
+    builtWord = "",
+    parentActors = [],
+    allValidWords = [];
+  for(var key in wordMasks) {
+    allValidWords = allValidWords.concat(wordMasks[key]);
+  }
+  while (curChar == "l"){
+    builtWord+= curActor.name;
+    parentActors.push(curActor);
+    curActor = findAtPosition(curActor.x + dir.x, curActor.y + dir.y, curActor.z + dir.z, true)[0];
+    if(!curActor || ~allValidWords.indexOf(builtWord)){
+      break;
+    }
+    curChar = getCharFromActor(curActor);
+  }
+  if (~allValidWords.indexOf(builtWord)) {
+    var lastParent = parentActors[parentActors.length-1];
+    return { name: builtWord, parentActors: parentActors, x:lastParent.x, y:lastParent.y, z:lastParent.z };
+  }
+  return null;
 }
 function getCharFromActor(actor) {
   for (var c in wordMasks) {
@@ -213,9 +245,9 @@ function addActorsToList(actor, list, notted, lonely) {
   } else {
     var newNoun = { name: actor.name };
     list[actor.name] = newNoun;
-    if (lonely) { // TODO: NOT LONELY vs LONELY NOT
+    if (lonely && lonely.active) { // TODO: NOT LONELY vs LONELY NOT
       newNoun.condition = newNoun.condition || { on: [], facing: [] };
-      newNoun.condition.on.push({ name: "", prenot: true, postnot: true });
+      newNoun.condition.on.push({ name: "", prenot: !lonely.not, postnot: true });
     }
   }
 }
@@ -227,7 +259,7 @@ function filterByCondition(actors, nouns) {
         nouns = nouns.filter(n => {
           var others = [];
           if (condClause.name == "text") {
-            others = findAtPosition(n.x, n.y, n.z, true)
+            others = findAtPosition(n.x, n.y, n.z, true).filter(o => o != n);
           } else {
             if (condClause.postnot) {
               others = findAtPosition(n.x, n.y, n.z, false, true).filter(o => o != n && condClause.name != o.name);
@@ -259,7 +291,13 @@ function filterByCondition(actors, nouns) {
 
 function executeBase(actors) {
   for (var actor of actors) {
-    $("#"+actor.id).addClass("active");
+    if (actor.parentActors) {
+      for (var pactor of actor.parentActors) { // Cant just recurse, don't want to add these to allSentences
+        $("#"+pactor.id).addClass("active");
+      }
+    } else {
+      $("#"+actor.id).addClass("active");
+    }
   }
   allSentences.push(actors);
 }

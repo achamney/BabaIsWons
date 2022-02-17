@@ -6,6 +6,7 @@ var numberOfTests;
 $(document).ready(async function(){
     window.updateRuleUI = function(){};
     window.playSfx = function(){};
+    window.particle = function(){};
     window.loadAudio = function(){};
     window.triggerWin = function () {
         successCallback();

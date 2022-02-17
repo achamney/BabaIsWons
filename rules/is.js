@@ -5,6 +5,7 @@ var runningEqualities = [],
     runningNEqualities = [];
 window.isRule = {
     execute: function (actors, dir) {
+        var initLonely = function() { lonely = {not: false, active:false};};
         var leftNouns = {},
             rightNouns = {},
             rightAdjs = {},
@@ -13,7 +14,7 @@ window.isRule = {
             rightNAdjs = {},
             isIndex = 0,
             notted = false,
-            lonely = false,
+            lonely = initLonely(),
             has = false,
             buildWord = "";
         for (isIndex = 0; isIndex < actors.length; isIndex++) {
@@ -35,7 +36,7 @@ window.isRule = {
                     conditionalNoun.condition.on.push({name: curActor.name, prenot: notted, postnot: false}); // TODO: ON NOT <noun>
                 }
                 notted = false;
-                lonely = false;
+                lonely = initLonely();
             }
             else if (curActor.name == "facing") {
                 addBuiltWordIfRequired(buildWord, leftNouns, notted, lonely);
@@ -48,13 +49,14 @@ window.isRule = {
                     conditionalNoun.condition.facing.push({name: curActor.name, prenot: notted, postnot: false}); // TODO: ON NOT <noun>
                 }
                 notted = false;
-                lonely = false;
+                lonely = initLonely();
             }
             else if (curActor.name == "not") {
                 notted = !notted;
             } 
             else if (curActor.name == "lonely") {
-                lonely = true;
+                lonely = { active: true, not: notted};
+                notted = false;
             } else if (curActor.name == "and") {
                 addBuiltWordIfRequired(buildWord, leftNouns, notted, lonely);
                 buildWord = "";
@@ -62,7 +64,7 @@ window.isRule = {
             } else if (actorChar == "n") {
                 addActorsToList(curActor, leftNouns, notted, lonely);
                 notted = false;
-                lonely = false;
+                lonely = initLonely();
             } else if (actorChar == "l") {
                 buildWord += curActor.name;
             }
@@ -107,7 +109,11 @@ window.isRule = {
                     runningEqualities.push([leftNouns[leftN], "is", rightN]);
             }
             for (var rightNN in rightNNouns) {
-                runningNEqualities.push([leftNouns[leftN], "is", "not", rightNN]);
+                if (leftNouns[leftN].name == rightNN) {
+                    runningEqualities.push([leftNouns[leftN], "is", ""]); // Wall is not wall should eliminate the wall
+                } else {
+                    runningNEqualities.push([leftNouns[leftN], "is", "not", rightNN]);
+                }
             }
             for (var rightH in rightHas) {
                 runningHas.push([leftNouns[leftN], "has", rightH]);
@@ -139,6 +145,10 @@ window.isRule = {
             } else if (actors[0].name == "all") {
                 for (var noun of allNouns) {
                     if (noun == "all") continue;
+                    this.addEqualityToDerefChanges([{ name: noun }, "", actors[2]], dereferencedChanges);
+                }
+            } else if (actors[0].name == "level") { // TODO: This is actually a secret unlock, but I'm making it more literal here
+                for (var noun of things) {
                     this.addEqualityToDerefChanges([{ name: noun }, "", actors[2]], dereferencedChanges);
                 }
             }
@@ -228,6 +238,9 @@ window.isRule = {
             var filteredObjs = gamestate.objects.filter(o => o.name == actors[0].name);// allThings?
             if (actors[0].name == "all") {
                 filteredObjs = gamestate.objects;
+            }
+            else if (actors[0].name == "level") {
+                filteredObjs = allThings;
             }
             else if (actors[0].name == "text") {
                 filteredObjs = gamestate.words;
