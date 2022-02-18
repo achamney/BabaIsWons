@@ -51,9 +51,11 @@ function runAdjectiveStep(obj) {
         }
     }
     if (obj.drop) {
-        var dir = { x: 0, y: 0, z: -1 };
-        while (!findIsStop(dir, obj.x, obj.y, obj.z)) {
-            move(obj, dir);
+        var newPositionObjs = findAtPosition(obj.x, obj.y, obj.z - 1).filter(o => o.push || o.stop || o.pull);
+        while (newPositionObjs.length == 0 && !isOutside(obj.x, obj.y, obj.z - 1)) {
+            obj.z -= 1;
+            updateObjPosition(obj, getDirCoordsFromDir(obj));
+            newPositionObjs = findAtPosition(obj.x, obj.y, obj.z - 1).filter(o => o.push || o.stop);
         }
     }
     if (obj.fall) {

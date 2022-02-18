@@ -377,8 +377,8 @@ function moveYou(dir) {
         particle(obj, "white", 1, 0.01);
       }
       if(gamestate.size.z > 1){
-        $(".gridline.gridx"+obj.x).css("outline","1px solid #522");
-        $(".gridline.gridy"+obj.y).css("outline","1px solid #522");
+        $(".gridline.gridx"+(obj.x + dir.x)).css("outline","1px solid #522");
+        $(".gridline.gridy"+(obj.y + dir.y)).css("outline","1px solid #522");
       }
     }
     runDeferredMoves();
