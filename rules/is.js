@@ -25,28 +25,16 @@ window.isRule = {
                 buildWord = "";
                 break;
             }
-            else if (curActor.name == "on") {
+            else if (curActor.name == "on" || curActor.name == "facing" || curActor.name == "near" ) {
+                var condition = curActor.name;
                 addBuiltWordIfRequired(buildWord, leftNouns, notted, lonely);
                 buildWord = "";
                 isIndex++;
-                curActor = actors[isIndex]; // TODO: on conditional noun spelling?
+                curActor = actors[isIndex]; 
                 var conditionalNouns = this.getConditionalNouns(leftNouns, actors, isIndex);
                 for (var conditionalNoun of conditionalNouns) {
-                    conditionalNoun.condition = conditionalNoun.condition || { on: [], facing: [] };
-                    conditionalNoun.condition.on.push({name: curActor.name, prenot: notted, postnot: false}); // TODO: ON NOT <noun>
-                }
-                notted = false;
-                lonely = initLonely();
-            }
-            else if (curActor.name == "facing") {
-                addBuiltWordIfRequired(buildWord, leftNouns, notted, lonely);
-                buildWord = "";
-                isIndex++;
-                curActor = actors[isIndex]; // TODO: on conditional noun spelling?
-                var conditionalNouns = this.getConditionalNouns(leftNouns, actors, isIndex);
-                for (var conditionalNoun of conditionalNouns) {
-                    conditionalNoun.condition = conditionalNoun.condition || { on: [], facing: [] };
-                    conditionalNoun.condition.facing.push({name: curActor.name, prenot: notted, postnot: false}); // TODO: ON NOT <noun>
+                    conditionalNoun.condition = conditionalNoun.condition || { on: [], facing: [], near: [] };
+                    conditionalNoun.condition[condition].push({name: curActor.name, prenot: notted, postnot: false}); // TODO: ON NOT <noun>
                 }
                 notted = false;
                 lonely = initLonely();

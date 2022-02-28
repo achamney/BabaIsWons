@@ -74,8 +74,8 @@ body {
 }
 .ghost.r { background-position-y: 0px; }
 .ghost.l { background-position-y: 34%; }
-.ghost.u { background-position-y: 69%; }
-.ghost.d { background-position-y: 103%; }
+.ghost.u { background-position-y: 67%; }
+.ghost.d { background-position-y: 100%; }
 .wall {
   background-image: url("img/wall.png")
 }

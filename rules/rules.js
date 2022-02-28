@@ -11,7 +11,7 @@ var wordMasks = {
   "h": ["has"],
   "c": ["and"],
   "x": ["not", "lonely"], /* Lonely here is a bit of a hack. lonely lonely baba is you isn't supposed to be valid*/ 
-  "o": ["on", "facing"],
+  "o": ["on", "facing", "near"],
   "n": ["text", "empty", "all", "group", "level"].concat(physicalNouns)
 };
 var ruleVerbs = ["is", "has", "make"];
@@ -23,6 +23,7 @@ var validSequences = {
   validStartingChars = ['x', 'l', 'n'];
 
 var allSentences = [];
+var nearMask = [{x:1,y:0,z:0},{x:-1,y:0,z:0},{x:0,y:1,z:0},{x:0,y:-1,z:0},{x:1,y:1,z:0},{x:-1,y:-1,z:0},{x:-1,y:1,z:0},{x:1,y:-1,z:0}];
 function executeRules() {
   applyAdjectives();
   preExecuteStep();
@@ -94,7 +95,8 @@ function findAllSentences() {
 }
 
 function preExecuteStep() {
-  for (var obj of gamestate.objects) {
+  var allThings = gamestate.objects.concat(gamestate.words);
+  for (var obj of allThings) {
     if (obj.move) {
       var moveCoords = getDirCoordsFromDir(obj);
       move(obj, moveCoords);    
@@ -103,7 +105,7 @@ function preExecuteStep() {
   runDeferredMoves();
 
   var shifts = [];
-  for (var obj of gamestate.objects) {
+  for (var obj of allThings) {
     if (obj.shift) {
       var objsAtPos = findAtPosition(obj.x, obj.y, obj.z);
       for (var shifted of objsAtPos) {
@@ -282,6 +284,23 @@ function filterByCondition(actors, nouns) {
             others = findAtPosition(n.x + dir.x, n.y + dir.y, n.z + dir.z, false, true).filter(o => o != n && condClause.name == o.name);
           }
           return condClause.prenot ? (others.length == 0) : (others.length > 0);
+        });
+      }
+    }
+    if (condition.near) {
+      for (var condClause of condition.near) {
+        nouns = nouns.filter(n => {
+          var isNear = false;
+          for (var dir of nearMask) {
+            var others = [];
+            if (condClause.name == "text") {
+              others = findAtPosition(n.x + dir.x, n.y + dir.y, n.z + dir.z, true)
+            } else {
+              others = findAtPosition(n.x + dir.x, n.y + dir.y, n.z + dir.z, false, true).filter(o => o != n && condClause.name == o.name);
+            }
+            isNear = others.length > 0 ? true : isNear;
+          }
+          return condClause.prenot ? !isNear : isNear;
         });
       }
     }
