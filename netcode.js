@@ -3,6 +3,49 @@ window.netService = {
     setGameState: function (gs, callback) { }
 }
 
+function PythonAnywhereService() {
+    var MASTERURL = location.protocol+"//achamney.pythonanywhere.com/";
+    this.setGameState = async function (gamestate, levelId, callback) {
+        var cacheBuster = Math.floor(Math.random()*10000);
+        var loadingIcon = $(".loading").show();
+        return await $.ajax({
+            url: MASTERURL+"set/"+levelId+"?cb="+cacheBuster,
+            type: "POST",
+            data: JSON.stringify(gamestate),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: function (data, textStatus, jqXHR) {
+                loadingIcon.hide();
+                var uri = data["_id"];
+                console.log(uri);
+                if (callback)
+                    callback();
+            }
+        });
+    }
+    this.getGameState = async function(level) {
+        var loadingIcon = $(".loading").show();
+        var cacheBuster = Math.floor(Math.random()*10000);
+        var ret = await $.get(MASTERURL+level+"?cb="+cacheBuster);
+        loadingIcon.hide();
+        return JSON.parse(ret);
+    }
+    this.makeNewLevel = async function(gamestate) {
+        var loadingIcon = $(".loading").show();
+        return await $.ajax({
+            url: MASTERURL+"make",
+            type: "POST",
+            data: JSON.stringify(gamestate),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: function (data, textStatus, jqXHR) {
+                loadingIcon.hide();
+                var uri = data["_id"];
+                console.log(uri);
+            }
+        });
+    }
+}
 function JsonBoxyService() {
     var MASTERURL = "https://jsonboxy.herokuapp.com/box_048253cc19be56e86f59/";
     this.setGameState = async function (gamestate, levelId, callback) {
@@ -47,7 +90,7 @@ function JsonBoxyService() {
     }
 }
 
-window.netService = new JsonBoxyService();/*JsonBoxyService();*/
+window.netService = new PythonAnywhereService();/*JsonBoxyService();*/
 
 function MockNetService() {
     this.getGameState = function () {
@@ -83,7 +126,7 @@ function MockNetService() {
                 var discardCard = player.cards[0];
                 discardThisCard(discardCard);
             }
-            
+
         }
         return gamestate;
     }

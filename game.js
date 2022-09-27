@@ -8,7 +8,16 @@ var gamestate = {
     group:[]
 },globalId = 1;
 window.selectedObj = {};
-window.movesToExecute = []; 
+window.movesToExecute = [];
+async function moveLevelsToPA() {
+  var jbs = new JsonBoxyService();
+  for (var key in window.worlds) {
+    for (var level of window.worlds[key]) {
+        var lvldata = await jbs.getGameState(level);
+        netService.setGameState(lvldata, level)
+    }
+  }
+}
 window.onload = function () {
 
   var urlParams = new URLSearchParams(window.location.search);
@@ -33,7 +42,7 @@ window.onload = function () {
   $(".ctldown")[0].addEventListener('touchstart',function (e) { e.preventDefault(); moveYou({ x: 0, y: 1, z: 0 }); },false);
   $(".ctlspace")[0].addEventListener('touchstart',function (e){ e.preventDefault(); gamewait(); },false);
   $(".ctlz")[0].addEventListener('touchstart',function (e) { e.preventDefault(); undo(); },false);
-  
+
   $("body").keydown(function (event) {
     pressKey(event);
   });
@@ -72,8 +81,8 @@ window.pressKey = function(event) {
   }
 }
 function gamewait() {
-  window.movesToExecute = []; 
-  executeRules(); 
+  window.movesToExecute = [];
+  executeRules();
   updateRuleUI();
 }
 async function triggerWin(obj) {
@@ -112,7 +121,7 @@ async function tmp() {
 
   }
   var file = new Blob(["window.leveldata="+JSON.stringify(backup)], {type: "text"});
-    
+
   var a = document.createElement("a"),
           url = URL.createObjectURL(file);
   a.href = url;
@@ -121,8 +130,8 @@ async function tmp() {
   a.click();
   setTimeout(function() {
       document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);  
-  }, 0); 
+      window.URL.revokeObjectURL(url);
+  }, 0);
 }
 function loadPremadeLevel(levelnum) {
   var levelTag = document.createElement("script");
@@ -139,7 +148,7 @@ function loadAudio(levelId) {
   var audio = $("audio")[0];
   var src = $("audio source").attr("src");
   for (var lvl in window.worlds) {
-    if (~window.worlds[lvl].indexOf(levelId) && window.audioMapping[lvl] != src) { 
+    if (~window.worlds[lvl].indexOf(levelId) && window.audioMapping[lvl] != src) {
       $("audio source").attr("src", window.audioMapping[lvl]);
       audio.load();
       window.audioLoaded = false;
@@ -152,7 +161,7 @@ function loadAudio(levelId) {
   }
 }
 function loadLevel(levelId) {
-  var refresh = window.location.protocol + "//" + window.location.host + window.location.pathname + '?levelid='+levelId;    
+  var refresh = window.location.protocol + "//" + window.location.host + window.location.pathname + '?levelid='+levelId;
   window.history.pushState({ path: refresh }, '', refresh);
   loadAudio(levelId);
   loadCommunityLevel(levelId);
@@ -165,9 +174,9 @@ async function loadCommunityLevel(communityLevelId) {
   initGameState(comgamestate);
   setWindowSize();
   drawGameState();
-  
+
   for (var lvl in window.worlds) {
-    if (~window.worlds[lvl].indexOf(communityLevelId)) { 
+    if (~window.worlds[lvl].indexOf(communityLevelId)) {
       $("#gamebody").css("background-color",window.colorMapping[lvl])
     }
   }
@@ -226,7 +235,7 @@ function removeObj(obj) {
       makeNewObjectFromOld(obj, h, h == "text");
     }
     applyAdjectives();
-  } 
+  }
   particle(obj, "#733", 10, 0.1);
 }
 function makeNewObjectFromOld(oldObj, newName, isWord) {
@@ -244,7 +253,7 @@ function makeNewObjectFromOld(oldObj, newName, isWord) {
 function makeGameState(level) {
     if (window.leveldata) {
       gamestate = window.leveldata;
-    } 
+    }
     gamestate.levelId=level;
     initGameState(gamestate);
 }
@@ -450,7 +459,7 @@ function move(gameobj,dir, cantPull, lookForward) {
     removeObj(gameobj);
     gamestate.empty.has && gamestate.empty.has.forEach(h=>{
       makeNewObjectFromOld(gameobj, h, h == "text");
-    }) 
+    })
   }
   !cantPull && pullChain(behindPositionObjs, dir);
   return true;
@@ -504,7 +513,7 @@ function findIsStop(dir, x, y, z, findChain, lookForward) {
   return false;
 }
 function isOutside(x,y,z) {
-  if(x<0 || y<0 ||x >= gamestate.size.x || y >= gamestate.size.y 
+  if(x<0 || y<0 ||x >= gamestate.size.x || y >= gamestate.size.y
     || z<0  || z >= gamestate.size.z){
     return true;
   }
