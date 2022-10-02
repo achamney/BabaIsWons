@@ -56,16 +56,16 @@
   <audio id="win0" class="winsnd"><source src="music/win.mp3" type="audio/mpeg"></audio>
 </body>
 
+<script>window.config={
+  playSnd:true,
+  winForward:true,
+  particle:true,
+  ruleUI:true
+}</script>
 <script src="jquery-3.4.1.min.js"></script>
 <script src="markgen.js"></script>
 <script src="netcode.js"></script>
 <script src="particle.js"></script>
-<script src="rules/is.js"></script>
-<script src="rules/has.js"></script>
-<script src="rules/make.js"></script>
-<script src="rules/adjective.js"></script>
-<script src="rules/rules.js"></script>
-<script src="undo.js"></script>
 <script src="levels/levelids.js"></script>
-<script src="game.js"></script>
+<script src="game.js" type="module"></script>
 </html>

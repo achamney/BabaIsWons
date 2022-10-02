@@ -1,25 +1,22 @@
-﻿// TODO: pull stack?, x is y is z
-var gamestate = {
+// TODO: pull stack?, x is y is z
+import * as rules from "./rules/rules.js"
+import {getDirCoordsFromDir,findAtPosition, updateObjPosition, isOutside} from "./gameService.js"
+import {applyAdjectives,removeAdjectives} from "./rules/adjective.js"
+import * as undo from "./undo.js";
+import {loadAudio, playSfx} from "./music/sfx.js"
+window.gamestate = {
     words:[],
     objects:[],
     levelId:1,
     size: {x: 24, y: 18, z: 1},
     solution: [],
     group:[]
-},globalId = 1;
+}
+window.globalId = 1;
 window.selectedObj = {};
 window.movesToExecute = [];
-async function moveLevelsToPA() {
-  var jbs = new JsonBoxyService();
-  for (var key in window.worlds) {
-    for (var level of window.worlds[key]) {
-        var lvldata = await jbs.getGameState(level);
-        netService.setGameState(lvldata, level)
-    }
-  }
-}
+export let gameHandler = {removeObj:removeObj,makeThing:makeThing,move:move,runDeferredMoves:runDeferredMoves,triggerWin:triggerWin, makeNewObjectFromOld:makeNewObjectFromOld};
 window.onload = function () {
-
   var urlParams = new URLSearchParams(window.location.search);
   var levelnum = Math.floor(urlParams.get("level"));
   var communityLevelId = urlParams.get("levelid");
@@ -36,12 +33,12 @@ window.onload = function () {
   $("#prevlevellink").click(e=>{loadLevel(findLevelByIndex(gamestate.levelId, -1)); e.preventDefault();return false;});
   $(".close").click(function() {$(".modal").hide().css("opacity",0);})
   $("#worldselect").click(function() {$(".modal").show().css("opacity",1);});
-  $(".ctlleft")[0].addEventListener('touchstart',function (e) { e.preventDefault(); moveYou({ x: -1, y: 0, z: 0 }); },false);
-  $(".ctlright")[0].addEventListener('touchstart',function (e) { e.preventDefault(); moveYou({ x: 1, y: 0, z: 0 }); },false);
-  $(".ctlup")[0].addEventListener('touchstart',function (e) { e.preventDefault(); moveYou({ x: 0, y: -1, z: 0 }); },false);
-  $(".ctldown")[0].addEventListener('touchstart',function (e) { e.preventDefault(); moveYou({ x: 0, y: 1, z: 0 }); },false);
-  $(".ctlspace")[0].addEventListener('touchstart',function (e){ e.preventDefault(); gamewait(); },false);
-  $(".ctlz")[0].addEventListener('touchstart',function (e) { e.preventDefault(); undo(); },false);
+  $(".ctlleft")[0] && ($(".ctlleft")[0].addEventListener('touchstart',function (e) { e.preventDefault(); moveYou({ x: -1, y: 0, z: 0 }); },false));
+  $(".ctlright")[0]&& ($(".ctlright")[0].addEventListener('touchstart',function (e) { e.preventDefault(); moveYou({ x: 1, y: 0, z: 0 }); },false));
+  $(".ctlup")[0]&& ($(".ctlup")[0].addEventListener('touchstart',function (e) { e.preventDefault(); moveYou({ x: 0, y: -1, z: 0 }); },false));
+  $(".ctldown")[0]&& ($(".ctldown")[0].addEventListener('touchstart',function (e) { e.preventDefault(); moveYou({ x: 0, y: 1, z: 0 }); },false));
+  $(".ctlspace")[0]&& ($(".ctlspace")[0].addEventListener('touchstart',function (e){ e.preventDefault(); gamewait(); },false));
+  $(".ctlz")[0]&& ($(".ctlz")[0].addEventListener('touchstart',function (e) { e.preventDefault(); undo.undo(gameHandler); },false));
 
   $("body").keydown(function (event) {
     pressKey(event);
@@ -77,15 +74,22 @@ window.pressKey = function(event) {
   } else if (event.keyCode == 32) {
     gamewait();
   } else if (event.keyCode == 90) {
-    undo();
+    undo.undo(gameHandler);
   }
 }
 function gamewait() {
   window.movesToExecute = [];
-  executeRules();
+  rules.executeRules(gameHandler);
   updateRuleUI();
 }
+let triggerWinImplFn = triggerWinImpl;
+export function changeTriggerWin(newWinFn) {
+  triggerWinImplFn = newWinFn;
+}
 async function triggerWin(obj) {
+  triggerWinImplFn(obj);
+}
+async function triggerWinImpl(obj) {
   if (!gamestate.wonAlready) {
     gamestate.wonAlready = true;
     var solution = clone(gamestate.solution);
@@ -144,23 +148,7 @@ function loadPremadeLevel(levelnum) {
   levelTag.src=`levels/level${levelnum}.js`;
   $("head")[0].appendChild(levelTag);
 }
-function loadAudio(levelId) {
-  var audio = $("audio")[0];
-  var src = $("audio source").attr("src");
-  for (var lvl in window.worlds) {
-    if (~window.worlds[lvl].indexOf(levelId) && window.audioMapping[lvl] != src) {
-      $("audio source").attr("src", window.audioMapping[lvl]);
-      audio.load();
-      window.audioLoaded = false;
-    }
-  }
-  if(!window.audioLoaded) {
-    window.audioLoaded = true;
-    audio.volume=0.66;
-    audio.play();
-  }
-}
-function loadLevel(levelId) {
+window.loadLevel = function(levelId) { // window level so it can be triggered from the HTML page
   var refresh = window.location.protocol + "//" + window.location.host + window.location.pathname + '?levelid='+levelId;
   window.history.pushState({ path: refresh }, '', refresh);
   loadAudio(levelId);
@@ -189,21 +177,6 @@ function setWindowSize() {
   } else {
     $('#gamebody').css("width", height * 30 / 18);
   }
-}
-function getDirCoordsFromDir(obj) {
-  if(obj.dir=="r") return {x:1,y:0,z:0};
-  else if(obj.dir=="l") return {x:-1,y:0,z:0};
-  else if(obj.dir=="u") return {x:0,y:-1,z:0};
-  else if(obj.dir=="d") return {x:0,y:1,z:0};
-  else return {x:0,y:1,z:0};
-}
-function coordDirToText(dir) {
-  if(dir.x>0) return "r";
-  if(dir.x<0) return "l";
-  if(dir.y>0) return "d";
-  if(dir.y<0) return "u";
-  if(dir.z<0) return "i";
-  if(dir.z>0) return "o";
 }
 function changeObj(obj, newName) {
   var objdiv = $("#"+obj.id);
@@ -257,29 +230,7 @@ function makeGameState(level) {
     gamestate.levelId=level;
     initGameState(gamestate);
 }
-function findAtPosition(i, j, k, excludeObjects, excludeText, lookForward) {
-  var ret = [];
-  var movedIds = movesToExecute.map(m=>m.obj.id);
-  if (!excludeObjects) {
-    for(var obj of gamestate.objects) {
-      if (lookForward && ~movedIds.indexOf(obj.id)) {
-        var moveInfo = movesToExecute.filter(m=>m.obj.id==obj.id)[0].dir;
-        obj = {x: obj.x + moveInfo.x, y: obj.y + moveInfo.y, z: obj.z + moveInfo.z, name: obj.name};
-      }
-      if (obj.x == i && obj.y == j && obj.z == k)
-        ret.push(obj);
-    }
-  }
-  if(!excludeText) {
-    var wordsAndWordAdj = gamestate.words.concat(gamestate.objects.filter(o => o.word));
-    for(var obj of wordsAndWordAdj) {
-      if (obj.x == i && obj.y == j && obj.z == k)
-        ret.push(obj);
-    }
-  }
-  return ret;
-}
-function drawGameState() {
+export function drawGameState() {
   $("#levelname").val(gamestate.name).html(gamestate.name);
   var main = $("#gamebody");
   main[0].innerHTML = "";
@@ -310,7 +261,7 @@ function drawGameState() {
   for (var obj of gamestate.words) {
     makeThing(main, obj, gridx, gridy, gridz, "id"+globalId++, false);
   }
-  executeRules();
+  rules.executeRules(gameHandler);
   runDeferredMoves();
 }
 function makeThing(parent, thing, gridx, gridy, gridz, globalId, isObject) {
@@ -322,7 +273,7 @@ function makeThing(parent, thing, gridx, gridy, gridz, globalId, isObject) {
     gridz = width / gamestate.size.z;
   }
   var displayClass = isObject ? thing.name : "gameword " + thing.name+"word";
-  if (~wordMasks.a.indexOf(thing.name)) {
+  if (rules.isAdjective(thing.name)) {
     displayClass += " action";
   }
   thing.z = thing.z || 0;
@@ -349,22 +300,19 @@ function runDeferredMoves(){
   }
   window.movesToExecute = [];
 }
-function playSfx(str) {
-  window.sndcnt = window.sndcnt || {};
-  sndcnt[str] = sndcnt[str] || 0;
-  var snd = $("#" + str + sndcnt[str])[0];
-  snd.volume = 0.66;
-  sndcnt[str]++;
-  if (sndcnt[str] == $("."+str+"snd").length)
-    sndcnt[str] = 0;
-  snd.play();
+let moveYouImplFn = moveYouImpl;
+export function changeMoveYou(moveYouFn) {
+  moveYouImplFn = moveYouFn;
 }
-function moveYou(dir) {
+export function moveYou(dir) {
+  moveYouImplFn(dir);
+}
+function moveYouImpl(dir) {
   playSfx("walk");
   loadAudio(gamestate.levelId);
   var concatStuff = gamestate.objects.concat(gamestate.words);
   var yous = concatStuff.filter(o => o.you);
-  undoStack.push(JSON.stringify(gamestate));
+  undo.push(JSON.stringify(gamestate));
   window.movesToExecute = [];
   if(gamestate.empty.you) {
     var pushes = concatStuff.filter(c => c.push);
@@ -375,7 +323,7 @@ function moveYou(dir) {
       }
     }
     runDeferredMoves();
-    executeRules();
+    rules.executeRules(gameHandler);
     runDeferredMoves();
     updateRuleUI();
   }
@@ -391,7 +339,7 @@ function moveYou(dir) {
       }
     }
     runDeferredMoves();
-    executeRules();
+    rules.executeRules(gameHandler);
     runDeferredMoves();
     updateRuleUI();
   }
@@ -400,8 +348,11 @@ function move(gameobj,dir, cantPull, lookForward) {
 
   var newPositionObjs = findAtPosition(gameobj.x + dir.x, gameobj.y + dir.y, gameobj.z + dir.z, false, false, lookForward),
       findStopChain = [gameobj];
-  if (checkIsLockAndKey(gameobj, newPositionObjs)) {
-    return true;
+  var lockKeyCombos = rules.getLockKeyCombos(gameobj, newPositionObjs);
+  if (lockKeyCombos.length > 0) {
+    removeObj(gameobj);
+    removeObj(lockKeyCombos[0].o2);// A key should only unlock one door
+    return true; // If a door is unlocked there will be a space to move into where the door once stood (unless there's also a stop obj there? TODO)
   }
   if(gameobj.swap) {
     if (isOutside(gameobj.x+dir.x, gameobj.y+dir.y, gameobj.z + dir.z)) {
@@ -479,20 +430,6 @@ function reverseDir(obj) {
   else if (obj.dir == "u") obj.dir = "d";
   else if (obj.dir == "d") obj.dir = "u";
 }
-function updateObjPosition(obj, dir) {
-  var main = $("#gamebody"),
-      width = $(main).width(),
-      height = $(main).height(),
-      gridx = width / gamestate.size.x / gamestate.size.z,
-      gridy = height / gamestate.size.y;
-  var objdiv = $("#"+obj.id);
-  if(dir.x != 0 || dir.y != 0) {
-    redoDirections(objdiv, dir);
-  }
-  obj.dir = coordDirToText(dir);
-  objdiv.css("left", (obj.x * gridx) + (obj.z * width / gamestate.size.z)+"px");
-  objdiv.css("top", obj.y * gridy+"px");
-}
 function findIsStop(dir, x, y, z, findChain, lookForward) {
   if (isOutside(x+dir.x, y+dir.y, z + dir.z)) {
     return true;
@@ -512,13 +449,7 @@ function findIsStop(dir, x, y, z, findChain, lookForward) {
   }
   return false;
 }
-function isOutside(x,y,z) {
-  if(x<0 || y<0 ||x >= gamestate.size.x || y >= gamestate.size.y
-    || z<0  || z >= gamestate.size.z){
-    return true;
-  }
-  return false;
-}
+
 function isStop(obj) {
   return obj.stop || obj.pull;
 }
@@ -526,16 +457,6 @@ function canPush(obj) {
   if(obj.push)
     return true;
   return false;
-}
-function redoDirections(obj, dir) {
-  obj.removeClass("l");
-  obj.removeClass("r");
-  obj.removeClass("u");
-  obj.removeClass("d");
-  if(dir.x < 0) { obj.addClass("l"); }
-  else if (dir.x > 0) { obj.addClass("r"); }
-  else if (dir.y < 0) { obj.addClass("u"); }
-  else if (dir.y > 0) { obj.addClass("d"); }
 }
 function fontMapping(gridx) {
   return gridx/2.7+"px";
@@ -554,20 +475,22 @@ function drawControlHints(main) {
     makesq("h2", main[0], "controlInfo", 10, 0).innerHTML = "{ Press Space Bar to wait }";
   }
 }
-function runSolution(ind) {
+window.runSolution = function(ind) {
   ind = ind || 0;
   window.pressKey({keyCode:savedSolution[ind]});
   window.setTimeout(()=>{runSolution(ind+1);}, 300);
 }
 function updateRuleUI() {
-  var body = $("#ruleUI");
-  body.html("");
-  var simple = convertRulesToSimple(allSentences);
-  for (var rule of simple) {
-    $(`<span>${rule}</span><br/>`).appendTo(body);
+  if (config.updateRuleUI) {
+    var body = $("#ruleUI");
+    body.html("");
+    var simple = rules.convertRulesToSimple();
+    for (var rule of simple) {
+      $(`<span>${rule}</span><br/>`).appendTo(body);
+    }
   }
 }
-function initGameState(gs) {
+export function initGameState(gs) {
   gs.empty = {};
   gs.size.z = gs.size.z || 1;
   window.savedSolution = gs.solution;

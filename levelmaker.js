@@ -1,4 +1,8 @@
-
+import {removeAllAdjectives} from "./rules/adjective.js"
+import {wordMasks} from './rules/ruleService.js'
+import {executeRules} from "./rules/rules.js"
+import {drawGameState, gameHandler, updateRuleUI, changeMoveYou} from "./game.js"
+import * as undo from "./undo.js";
 var defaultObj = "wall";
 window.makemode = "object";
 $(document).ready(function(){
@@ -49,12 +53,12 @@ function testlevel() {
   window.open(window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port: '')+"?levelid="+gamestate.levelId);
 }
 function changeBaseGameFunctions(){
-  window.moveYou = function(dir) {
-    undoStack.push(JSON.stringify(gamestate));
+  changeMoveYou(function(dir) {
+    undo.push(JSON.stringify(gamestate));
     move(window.selectedObj, dir);
-    executeRules();
+    rules.executeRules(gameHandler);
     updateRuleUI();
-  }
+  });
 }
 function moveAllDir(dir) {
   for(var obj of gamestate.objects) {
@@ -73,7 +77,7 @@ function scrubGameState(gamestate) {
   return scrubbed;
 }
 function makeOrModObject(event) {
-  undoStack.push(JSON.stringify(gamestate));
+  undo.push(JSON.stringify(gamestate));
   var gridpos = pointToGrid(event);
   if (event.button == 0) {
     if (!event.target.gamedata) {
@@ -83,7 +87,7 @@ function makeOrModObject(event) {
       if (makemode == "object") {
         if (!~wordMasks.n.indexOf(window.selectedObj.name)) {
           window.selectedObj.name = defaultObj;
-        } 
+        }
         gamestate.objects.push(window.selectedObj);
       } else if (makemode == "word") {
         gamestate.words.push(window.selectedObj);
@@ -117,7 +121,7 @@ function pointToGrid(event) {
 function save() {
   window.gamestate.name = $("#levelname").val();
   var file = new Blob(["window.leveldata="+JSON.stringify(scrubGameState(gamestate))], {type: "text"});
-    
+
   var a = document.createElement("a"),
           url = URL.createObjectURL(file);
   a.href = url;
@@ -126,9 +130,9 @@ function save() {
   a.click();
   setTimeout(function() {
       document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);  
-  }, 0); 
-    
+      window.URL.revokeObjectURL(url);
+  }, 0);
+
 }
 async function savecloud() {
   window.gamestate.name = $("#levelname").val();

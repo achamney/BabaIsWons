@@ -1,9 +1,11 @@
-function runAdjectiveStep(obj) {
+import {wordMasks,physicalNouns,filterByCondition, isHandler} from './ruleService.js'
+import {updateObjPosition, findAtPosition, isOutside, getDirCoordsFromDir} from '../gameService.js'
+export function runAdjectiveStep(obj, gameHandler) {
     if (obj.shut) {
         var objsAtPos = findAtPosition(obj.x, obj.y, obj.z);
         if (objsAtPos.filter(o => o.open && o.float == obj.float).length > 0) {
-            removeObj(obj);
-            removeObj(objsAtPos[0]);
+            gameHandler.removeObj(obj);
+            gameHandler.removeObj(objsAtPos[0]);
         }
     }
     if (obj.up) { obj.dir = "u"; updateObjPosition(obj, getDirCoordsFromDir(obj)); }
@@ -14,40 +16,40 @@ function runAdjectiveStep(obj) {
         var objsAtPos = findAtPosition(obj.x, obj.y, obj.z);
         for (var sinking of objsAtPos) {
             if (obj == sinking || obj.float != sinking.float) continue;
-            removeObj(obj);
-            removeObj(sinking);
+            gameHandler.removeObj(obj);
+            gameHandler.removeObj(sinking);
         }
     }
     if (obj.weak) {
         var objsAtPos = findAtPosition(obj.x, obj.y, obj.z).filter(o => o.id != obj.id);
         if (objsAtPos.length > 0) {
-            removeObj(obj);
+            gameHandler.removeObj(obj);
             for (var other of objsAtPos) {
                 if (other.weak) {
-                    removeObj(other);
+                    gameHandler.removeObj(other);
                 }
             }
             return;
         }
     }
     if (obj.more) {
-        makeInDirection({ x: - 1, y: 0, z: 0 }, obj, ~gamestate.words.indexOf(obj));
-        makeInDirection({ x: 0, y: 1, z: 0 }, obj, ~gamestate.words.indexOf(obj));
-        makeInDirection({ x: 0, y: - 1, z: 0 }, obj, ~gamestate.words.indexOf(obj));
-        makeInDirection({ x: 1, y: 0, z: 0 }, obj, ~gamestate.words.indexOf(obj));
+        makeInDirection({ x: - 1, y: 0, z: 0 }, obj, ~gamestate.words.indexOf(obj), gameHandler);
+        makeInDirection({ x: 0, y: 1, z: 0 }, obj, ~gamestate.words.indexOf(obj), gameHandler);
+        makeInDirection({ x: 0, y: - 1, z: 0 }, obj, ~gamestate.words.indexOf(obj), gameHandler);
+        makeInDirection({ x: 1, y: 0, z: 0 }, obj, ~gamestate.words.indexOf(obj), gameHandler);
     }
     if (obj.defeat) {
         var objsAtPos = findAtPosition(obj.x, obj.y, obj.z);
         for (var defeated of objsAtPos) {
             if (defeated.you && obj.float == defeated.float)
-                removeObj(defeated);
+                gameHandler.removeObj(defeated);
         }
     }
     if (obj.hot) {
         var objsAtPos = findAtPosition(obj.x, obj.y, obj.z);
         for (var melted of objsAtPos) {
             if (melted.melt && obj.float == melted.float)
-                removeObj(melted);
+                gameHandler.removeObj(melted);
         }
     }
     if (obj.drop) {
@@ -83,16 +85,16 @@ function runAdjectiveStep(obj) {
     if (obj.win) {
         var objsAtPos = findAtPosition(obj.x, obj.y, obj.z);
         if (objsAtPos.filter(o => o.you && o.float == obj.float).length > 0) {
-            triggerWin(obj);
+            gameHandler.triggerWin(obj);
         }
     }
 }
-function makeInDirection(dir, obj, isWord) {
+function makeInDirection(dir, obj, isWord, gameHandler) {
     if (findAtPosition(obj.x+dir.x, obj.y+dir.y, obj.z+dir.z).filter(o => o.name == obj.name || o.stop || o.push || o.pull).length == 0
         && !isOutside(obj.x+dir.x, obj.y+dir.y, obj.z+dir.z)) {
         var newObj = clone(obj);
         gamestate.objects.push(newObj);
-        makeThing($("#gamebody"), newObj, null, null, null, "id"+globalId++, !isWord);
+        gameHandler.makeThing($("#gamebody"), newObj, null, null, null, "id"+globalId++, !isWord);
         newObj.x += dir.x;
         newObj.y += dir.y;
         newObj.z += dir.z;
@@ -100,10 +102,10 @@ function makeInDirection(dir, obj, isWord) {
     }
 }
 
-function applyAdjectives() {
+export function applyAdjectives() {
     var allThingNames = wordMasks.n;
-    var allInGroup = runningEqualities.filter(a => a[2] == "group").map(a => a[0].name).filter((w, i, self) => self.indexOf(w) === i); // get only unique noun names;
-    for (var actors of runningAdjectives) {
+    var allInGroup = isHandler.runningEqualities.filter(a => a[2] == "group").map(a => a[0].name).filter((w, i, self) => self.indexOf(w) === i); // get only unique noun names;
+    for (var actors of isHandler.runningAdjectives) {
         if (actors[0].name == "group") {
             for (var noun of allInGroup) {
                 executeAdjectiveImpl([{ name: noun }, "", actors[2]]);
@@ -112,7 +114,7 @@ function applyAdjectives() {
             for (var noun of allThingNames) {
                 executeAdjectiveImpl([{ name: noun }, "", actors[2]]);
             }
-        } 
+        }
         else if (actors[0].name == "all") {
             for (var noun of physicalNouns) {
                 executeAdjectiveImpl([{ name: noun }, "", actors[2]]);
@@ -125,11 +127,11 @@ function applyAdjectives() {
 }
 function executeAdjectiveImpl(actors) {
 
-    if (runningNAdjectives.filter(n => n[0].name == actors[0].name && n[3] == actors[2]).length > 0) {
+    if (isHandler.runningNAdjectives.filter(n => n[0].name == actors[0].name && n[3] == actors[2]).length > 0) {
         return;
     }
     var nouns = gamestate.objects.filter(o => o.name == actors[0].name);
-    
+
     if (actors[0].name == "text") {
         nouns = gamestate.words;
     }
@@ -143,7 +145,7 @@ function executeAdjectiveImpl(actors) {
     }
 }
 
-function removeAllAdjectives(gs, dontRemoveTextClasses) {
+export function removeAllAdjectives(gs, dontRemoveTextClasses) {
     for (var obj of gs.objects) {
         removeAdjectives(obj);
     }
@@ -155,7 +157,7 @@ function removeAllAdjectives(gs, dontRemoveTextClasses) {
     }
     gamestate.empty = {};
 }
-function removeAdjectives(obj) {
+export function removeAdjectives(obj) {
     var objdom = $("#" + obj.id);
     for (var adjective of wordMasks.a) {
         if (adjective != "word") { // Word needs to be maintained till after rule processing
@@ -166,7 +168,7 @@ function removeAdjectives(obj) {
     delete obj.used;
     delete obj.has;
 }
-function removeWordAdjectives(allSentences) {
+export function removeWordAdjectives(allSentences) {
     var wordSentences = allSentences.filter(s => s[2].name == "word").map(s => s[0].name);
     for (var obj of gamestate.objects) {
         if (!(~wordSentences.indexOf(obj.name))) {

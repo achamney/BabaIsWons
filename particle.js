@@ -3,19 +3,21 @@ let particleBody, particleBodyDiv;
 let w, h, gridx, gridy, gridz;
 let maxTime = 30;
 function particle(origin, color, number, speed) {
-    speed = speed || 1;
-    for (var i = 0; i < number; i++) {
-        var x = origin.x + 0.3, y = origin.y + 0.3, z = origin.z;
-        var p = makesq("div", particleBodyDiv, "particle", x * gridx + z * gridz, y * gridy);
-        p.innerHTML = "O";
-        p.timer = maxTime;
-        p.direction = Math.random() * Math.PI * 2;
-        p.speed = Math.random() * speed;
-        p.style.color = color;
-        p.x = x;
-        p.y = y;
-        p.z = z;
-        particles.push(p);
+    if(config.particle) {
+      speed = speed || 1;
+      for (var i = 0; i < number; i++) {
+          var x = origin.x + 0.3, y = origin.y + 0.3, z = origin.z;
+          var p = makesq("div", particleBodyDiv, "particle", x * gridx + z * gridz, y * gridy);
+          p.innerHTML = "O";
+          p.timer = maxTime;
+          p.direction = Math.random() * Math.PI * 2;
+          p.speed = Math.random() * speed;
+          p.style.color = color;
+          p.x = x;
+          p.y = y;
+          p.z = z;
+          particles.push(p);
+      }
     }
 }
 $(document).ready(function () {

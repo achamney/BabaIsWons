@@ -23,9 +23,9 @@
       Next element created will be: <br>
       <button id="objbutton" class="selected">Object</button><button id="wordbutton">Word</button>
       <span style="display:none">&nbsp; &nbsp; <button id="save">Save</button><button id="load">Load</button></span>
-      
+
     </div>
-    &nbsp; &nbsp; 
+    &nbsp; &nbsp;
     <div style = "display: inline-block">
       Size (click save to change): X: <input id="xsize" style="width:40px"> Y: <input id="ysize" style="width:40px"> Z: <input id="zsize" style="width:40px"><br>
     <button id="savecloud"><b>Save Game</b></button><button id="cloneCloud">Clone</button><button id="testbutton">Test</button>
@@ -43,16 +43,14 @@
   </div>
 </body>
 
+<script>window.config={
+  playSnd:false,
+  winForward:false,
+  particle:true,
+}</script>
 <script src="jquery-3.4.1.min.js"></script>
 <script src="markgen.js"></script>
 <script src="netcode.js"></script>
-<script src="levelmaker.js"></script>
+<script src="levelmaker.js" type="module"></script>
 <script src="particle.js"></script>
-<script src="rules/is.js"></script>
-<script src="rules/has.js"></script>
-<script src="rules/make.js"></script>
-<script src="rules/adjective.js"></script>
-<script src="rules/rules.js"></script>
-<script src="undo.js"></script>
-<script src="game.js"></script>
 </html>

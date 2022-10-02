@@ -1,6 +1,12 @@
 
+import {getDirCoordsFromDir,updateObjPosition} from "./gameService.js"
+import {executeRules} from "./rules/rules.js"
+import {playSfx} from "./music/sfx.js"
 var undoStack = [];
-function undo() {
+export function push(toAdd) {
+  undoStack.push(toAdd);
+}
+export function undo(gameHandler) {
     if(undoStack.length == 0) return;
     playSfx("walk");
     var lastGameStateText = undoStack.pop(),
@@ -17,10 +23,10 @@ function undo() {
         obj.name = savedObj.name;
         $("#"+obj.id).addClass(obj.name);
       } else {
-        removeObj(obj);
+        gameHandler.removeObj(obj);
       }
     }
-    undoDeletedElements(gamestate.objects, lastGameState.objects);
+    undoDeletedElements(gamestate.objects, lastGameState.objects, gameHandler);
     for(var i= gamestate.words.length -1; i>=0;i--) {
       var obj = gamestate.words[i];
       var savedObj = lastGameState.words.filter(o=>o.id==obj.id)[0];
@@ -34,10 +40,10 @@ function undo() {
         removeObj(obj);
       }
     }
-    undoDeletedElements(gamestate.words, lastGameState.words);
-    executeRules();
+    undoDeletedElements(gamestate.words, lastGameState.words, gameHandler);
+    executeRules(gameHandler);
   }
-  function undoDeletedElements (newElements, oldElements) {
+  function undoDeletedElements (newElements, oldElements, gameHandler) {
     var main = $("#gamebody");
     var deletedObjs = oldElements.filter(o=>{
       var ret = true;
@@ -49,6 +55,6 @@ function undo() {
     });
     for(var deleted of deletedObjs) {
       newElements.push(deleted);
-      makeThing(main, deleted, null, null, null, deleted.id, newElements == gamestate.objects);
+      gameHandler.makeThing(main, deleted, null, null, null, deleted.id, newElements == gamestate.objects);
     }
   }

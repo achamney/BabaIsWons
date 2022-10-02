@@ -1,9 +1,7 @@
-var runningEqualities = [],
-    runningChangeless = [],
-    runningAdjectives = [],
-    runningNAdjectives = [],
-    runningNEqualities = [];
-window.isRule = {
+import {applyAdjectives} from './adjective.js'
+import {findAtPosition} from '../gameService.js'
+import {wordMasks,getCharFromActor,filterByCondition,isHandler,addActorsToList,executeBase} from './ruleService.js'
+export let isRule = {
     execute: function (actors, dir) {
         var initLonely = function() { lonely = {not: false, active:false};};
         var leftNouns = {},
@@ -30,7 +28,7 @@ window.isRule = {
                 addBuiltWordIfRequired(buildWord, leftNouns, notted, lonely);
                 buildWord = "";
                 isIndex++;
-                curActor = actors[isIndex]; 
+                curActor = actors[isIndex];
                 var conditionalNouns = this.getConditionalNouns(leftNouns, actors, isIndex);
                 for (var conditionalNoun of conditionalNouns) {
                     conditionalNoun.condition = conditionalNoun.condition || { on: [], facing: [], near: [] };
@@ -41,7 +39,7 @@ window.isRule = {
             }
             else if (curActor.name == "not") {
                 notted = !notted;
-            } 
+            }
             else if (curActor.name == "lonely") {
                 lonely = { active: true, not: notted};
                 notted = false;
@@ -85,22 +83,22 @@ window.isRule = {
         this.addRightBuildWordIfRequired(buildWord, has, notted, rightHas, rightNNouns, rightNouns, rightAdjs, rightNAdjs);
         for (var leftN in leftNouns) {
             for (var rightA in rightAdjs) {
-                runningAdjectives.push([leftNouns[leftN], "is", rightA]);
+                isHandler.runningAdjectives.push([leftNouns[leftN], "is", rightA]);
             }
             for (var rightNA in rightNAdjs) {
-                runningNAdjectives.push([leftNouns[leftN], "is", "not", rightNA]);
+                isHandler.runningNAdjectives.push([leftNouns[leftN], "is", "not", rightNA]);
             }
             for (var rightN in rightNouns) {
                 if (leftN == rightN)
-                    runningChangeless.push(leftN);
+                    isHandler.runningChangeless.push(leftN);
                 else
-                    runningEqualities.push([leftNouns[leftN], "is", rightN]);
+                    isHandler.runningEqualities.push([leftNouns[leftN], "is", rightN]);
             }
             for (var rightNN in rightNNouns) {
                 if (leftNouns[leftN].name == rightNN) {
-                    runningEqualities.push([leftNouns[leftN], "is", ""]); // Wall is not wall should eliminate the wall
+                    isHandler.runningEqualities.push([leftNouns[leftN], "is", ""]); // Wall is not wall should eliminate the wall
                 } else {
-                    runningNEqualities.push([leftNouns[leftN], "is", "not", rightNN]);
+                    isHandler.runningNEqualities.push([leftNouns[leftN], "is", "not", rightNN]);
                 }
             }
             for (var rightH in rightHas) {
@@ -110,22 +108,22 @@ window.isRule = {
         executeBase(actors);
     },
     reset: function () {
-        runningEqualities = [];
-        runningChangeless = [];
-        runningAdjectives = [[{name:"text"}, "is", "push"]];
-        runningNAdjectives = [];
-        runningNEqualities = [];
+        isHandler.runningEqualities = [];
+        isHandler.runningChangeless = [];
+        isHandler.runningAdjectives = [[{name:"text"}, "is", "push"]];
+        isHandler.runningNAdjectives = [];
+        isHandler.runningNEqualities = [];
     },
-    apply: function () {
-        this.applyChanges();
+    apply: function (gameHandler) {
+        this.applyChanges(gameHandler);
         applyAdjectives();
     },
-    applyChanges() {
+    applyChanges(gameHandler) {
         var allThings = gamestate.objects.concat(gamestate.words);
         var dereferencedChanges = {};
         var allNouns = gamestate.words.filter(w => getCharFromActor(w) == "n").map(w => w.name).filter((w, i, self) => self.indexOf(w) === i); // get only unique noun names
-        var allInGroup = runningEqualities.filter(a => a[2] == "group").map(a => a[0].name).filter((w, i, self) => self.indexOf(w) === i); // get only unique noun names;
-        for (var actors of runningEqualities) {
+        var allInGroup = isHandler.runningEqualities.filter(a => a[2] == "group").map(a => a[0].name).filter((w, i, self) => self.indexOf(w) === i); // get only unique noun names;
+        for (var actors of isHandler.runningEqualities) {
             if (actors[2] == "all") {
                 for (var noun of allNouns) {
                     this.addEqualityToDerefChanges([actors[0], "", noun], dereferencedChanges);
@@ -144,7 +142,7 @@ window.isRule = {
                 for (var noun of allInGroup) {
                     this.addEqualityToDerefChanges([{ name: noun }, "", actors[2]], dereferencedChanges);
                 }
-            } 
+            }
             else if (actors[2] == "group") {
                 // Do nothing. {baba is group} is just group assignment
             }
@@ -160,14 +158,14 @@ window.isRule = {
             var locKey = JSON.parse(derefId);
             for (var derefName of dereferencedChanges[derefId]) {
               if (derefName != "empty")
-                makeNewObjectFromOld(locKey, derefName, derefName == "text");
+                gameHandler.makeNewObjectFromOld(locKey, derefName, derefName == "text");
             }
           } else {
             var obj = allThings.filter(o=>o.id == derefId)[0];
-            removeObj(obj);
+            gameHandler.removeObj(obj);
             for (var derefName of dereferencedChanges[derefId]) {
               if (derefName != "empty")
-                makeNewObjectFromOld(obj, derefName, derefName == "text");
+                gameHandler.makeNewObjectFromOld(obj, derefName, derefName == "text");
             }
           }
         }
@@ -189,7 +187,7 @@ window.isRule = {
             while (thisActor.name == "not") {
                 notted = !notted;
                 reverseInd++;
-                if (isIndex - reverseInd <0) 
+                if (isIndex - reverseInd <0)
                     break;
                 thisActor = actors[isIndex - reverseInd];
             }
@@ -200,13 +198,13 @@ window.isRule = {
                 ret.push(nouns[key]);
             }
             return ret; // TODO: baba and not baba on flag is push. This would erroneously select baba as a conditional noun
-        } else { 
+        } else {
             return [nouns[actors[isIndex - reverseInd].name]];
         }
     },
     addEqualityToDerefChanges: function(actors, dereferencedChanges) {
-        if (~runningChangeless.indexOf(actors[0].name) ||
-            runningNEqualities.filter(n=>n[0].name == actors[0].name && n[3] == actors[2]).length>0) {
+        if (~isHandler.runningChangeless.indexOf(actors[0].name) ||
+            isHandler.runningNEqualities.filter(n=>n[0].name == actors[0].name && n[3] == actors[2]).length>0) {
             return;
         }
         if (actors[0].name == "empty") {

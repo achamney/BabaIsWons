@@ -1,5 +1,6 @@
-var runningHas = [];
-window.hasRule = {
+import {getCharFromActor,addActorsToList,executeBase} from './ruleService.js'
+let runningHas = [];
+export let hasRule = {
     execute: function (actors, dir) {
         var leftNouns = {},
             rightNouns = {},

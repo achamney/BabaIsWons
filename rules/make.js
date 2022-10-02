@@ -1,5 +1,7 @@
-var runningMake = [];
-window.makeRule = {
+import {getCharFromActor,addActorsToList,executeBase} from './ruleService.js'
+import {findAtPosition} from '../gameService.js'
+let runningMake = [];
+export let makeRule = {
     execute: function (actors, dir) {
         var leftNouns = {},
             rightNouns = {},
@@ -45,7 +47,7 @@ window.makeRule = {
     reset: function () {
         runningMake = [];
     },
-    apply: function () {
+    apply: function (gameHandler) {
         for (var actors of runningMake) {
             var makes = gamestate.objects.filter(o => o.name == actors[0]);
             if (actors[0] == "text") {
@@ -56,7 +58,7 @@ window.makeRule = {
             }
             makes.forEach(o => {
                 if (findAtPosition(o.x, o.y, o.z).filter(other => other.name == actors[2]).length == 0) {
-                    makeNewObjectFromOld(o, actors[2], actors[0] == "text");
+                    gameHandler.makeNewObjectFromOld(o, actors[2], actors[0] == "text");
                 }
             })
         }

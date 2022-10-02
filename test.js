@@ -1,16 +1,15 @@
+import {executeRules} from './rules/rules.js'
+import {changeTriggerWin, gameHandler, initGameState} from './game.js'
 var won = false;
 var successCallback = function(){
     won = true;
 }
 var numberOfTests;
 $(document).ready(async function(){
-    window.updateRuleUI = function(){};
-    window.playSfx = function(){};
-    window.particle = function(){};
-    window.loadAudio = function(){};
-    window.triggerWin = function () {
+  debugger;
+    changeTriggerWin(function () {
         successCallback();
-    }
+    });
     var testBody = $("#testbody");
     var worlds = window.worlds;
     var joinedLevels = [];
@@ -58,8 +57,8 @@ function runOneTest(gamestates, index) {
     } else {
         initGameState(gs);
         window.gamestate = gs;
-        executeRules();
-        runDeferredMoves();
+        executeRules(gameHandler);
+        gameHandler.runDeferredMoves();
         won = false;
         for (var s in solution) {
             window.pressKey({ keyCode: solution[s] });
