@@ -8,12 +8,11 @@ function PythonAnywhereService() {
     this.setGameState = async function (gamestate, levelId, callback) {
         var cacheBuster = Math.floor(Math.random()*10000);
         var loadingIcon = $(".loading").show();
-        return await $.ajax({
+        return $.ajax({
             url: MASTERURL+"set/"+levelId+"?cb="+cacheBuster,
             type: "POST",
             data: JSON.stringify(gamestate),
             contentType: "application/json; charset=utf-8",
-            dataType: "json",
             success: function (data, textStatus, jqXHR) {
                 loadingIcon.hide();
                 var uri = data["_id"];

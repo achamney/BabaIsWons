@@ -1,7 +1,7 @@
 import {removeAllAdjectives} from "./rules/adjective.js"
 import {wordMasks} from './rules/ruleService.js'
 import {executeRules} from "./rules/rules.js"
-import {drawGameState, gameHandler, updateRuleUI, changeMoveYou} from "./game.js"
+import {drawGameState, gameHandler, updateRuleUI, changeMoveYou, move} from "./game.js"
 import * as undo from "./undo.js";
 var defaultObj = "wall";
 window.makemode = "object";
@@ -56,7 +56,7 @@ function changeBaseGameFunctions(){
   changeMoveYou(function(dir) {
     undo.push(JSON.stringify(gamestate));
     move(window.selectedObj, dir);
-    rules.executeRules(gameHandler);
+    executeRules(gameHandler);
     updateRuleUI();
   });
 }
@@ -114,7 +114,7 @@ function pointToGrid(event) {
       height = $(main).height(),
       x = Math.floor((event.offsetX % (width / gamestate.size.z))/ (width / gamestate.size.z / gamestate.size.x)),
       z = Math.floor(event.offsetX / (width / gamestate.size.z)),
-      y = Math.floor((event.offsetY - 5) * gamestate.size.y / height);
+      y = Math.floor((event.offsetY - 5) * gamestate.size.y / height),
       ret = {x: x, y: y, z: z};
   return ret;
 }
@@ -147,8 +147,12 @@ async function savecloud() {
     var ret = await netService.makeNewLevel(window.gamestate);
     window.location = window.location.pathname + "?levelid="+ret["_id"];
   } else {
-    await netService.setGameState(window.gamestate, communityLevelId);
-    window.location = window.location.pathname + "?levelid="+communityLevelId;
+    try {
+      await netService.setGameState(window.gamestate, communityLevelId);
+      window.location = window.location.pathname + "?levelid="+communityLevelId;
+    } catch (e) {
+      console.log(e);
+    }
   }
 }
 function load() {

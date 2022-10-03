@@ -344,7 +344,7 @@ function moveYouImpl(dir) {
     updateRuleUI();
   }
 }
-function move(gameobj,dir, cantPull, lookForward) {
+export function move(gameobj,dir, cantPull, lookForward) {
 
   var newPositionObjs = findAtPosition(gameobj.x + dir.x, gameobj.y + dir.y, gameobj.z + dir.z, false, false, lookForward),
       findStopChain = [gameobj];
@@ -480,7 +480,7 @@ window.runSolution = function(ind) {
   window.pressKey({keyCode:savedSolution[ind]});
   window.setTimeout(()=>{runSolution(ind+1);}, 300);
 }
-function updateRuleUI() {
+export function updateRuleUI() {
   if (config.updateRuleUI) {
     var body = $("#ruleUI");
     body.html("");
